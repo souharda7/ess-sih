@@ -47,9 +47,25 @@ python3 -m venv --system-site-packages .venv
 
 The demo fits approved synthetic reference lots and scores an unseen lot at 24 hours.
 
+## Interactive QA Dashboard
+
+The project includes a full-featured, professional QA dashboard built with Streamlit. It connects directly to the ESS engine to provide real-time multivariate anomaly scoring (Isolation Forest & Mahalanobis), drift trajectory analysis, and component-level deep-dives.
+
+To run it locally:
+```bash
+streamlit run app.py
+```
+
+## Deployment
+
+The project is fully configured for easy cloud deployment:
+
+* **Streamlit Community Cloud (Frontend):** A flat `requirements.txt` is included at the root. Simply connect the repository to Streamlit Cloud, and it will deploy the interactive dashboard instantly.
+* **Render (Infrastructure as Code):** A `render.yaml` file is provided to automatically deploy the FastAPI backend (`ess-backend`) and the Streamlit frontend (`ess-frontend`) as separate web services.
+
 ## Command-line workflow
 
-Generate PS-shaped development data:
+Generate PS-shaped development data (includes up to 5% random defect fluctuations per normal lot, plus specific lot-wide shifts):
 
 ```bash
 .venv/bin/ess-module-a generate \
@@ -63,7 +79,7 @@ Fit and version the historical reference:
 ```bash
 .venv/bin/ess-module-a fit \
   --input data/synthetic.csv \
-  --output artifacts/reference.joblib
+  --output artifacts/reference.json
 ```
 
 Score a CSV containing exactly one lot:
@@ -71,7 +87,7 @@ Score a CSV containing exactly one lot:
 ```bash
 .venv/bin/ess-module-a score \
   --input data/one_lot.csv \
-  --reference artifacts/reference.joblib \
+  --reference artifacts/reference.json \
   --as-of 24 \
   --output artifacts/score.json
 ```
@@ -91,7 +107,7 @@ Start the local service:
 
 ```bash
 .venv/bin/ess-module-a serve \
-  --reference artifacts/reference.joblib
+  --reference artifacts/reference.json
 ```
 
 Endpoints:
