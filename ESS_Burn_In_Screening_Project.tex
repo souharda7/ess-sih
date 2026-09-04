@@ -1,0 +1,378 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color[gray]{0.97}
+}
+
+\title{ESS Burn-In Screening System: Modules A, B, and Safety-First Ensemble}
+\author{}
+\date{September 4, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document describes a Python system for high-reliability electronic component screening in burn-in/ESS workflows.  
+The project combines:
+\begin{itemize}[nosep]
+  \item Module A: dynamic and static anomaly detection on observed checkpoints;
+  \item Module B: explainable 168-hour drift prediction from 0 h and 24 h measurements;
+  \item Ensemble engine: deterministic safety-first fusion of Module A and Module B outputs at the 24-hour checkpoint.
+\end{itemize}
+The system is built as a set of reusable modules with CLI, API, and Streamlit dashboard interfaces, plus reproducible evaluation and synthetic benchmarks.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Project Scope and Objectives}
+
+The project addresses latent defects that can evade static pass/fail limits but show anomalous drift behavior over time:
+\begin{itemize}[nosep]
+  \item Traditional static checks can miss failures that pass absolute bounds but deviate from peer behavior.
+  \item Module A adds dynamic, peer-aware outlier detection.
+  \item Module B predicts future drift from early checkpoints and flags unsafe forecasts.
+  \item Ensemble combines both signals with conservative precedence for early reject decisions.
+\end{itemize}
+
+Primary objectives:
+\begin{itemize}[nosep]
+  \item Keep false negative rate (missed defects) extremely low.
+  \item Provide traceable, explainable reasons for every classification.
+  \item Allow safety-first integration in early-life screening workflows.
+\end{itemize}
+
+\section{Repository Organization}
+
+\begin{longtable}{p{0.33\textwidth}p{0.62\textwidth}}
+\toprule
+\textbf{Path/Component} & \textbf{Purpose} \\
+\midrule
+\texttt{src/ess\_module\_a/} & Module A core engine, config, validation, API, CLI, detectors, statistics, feature engineering, evaluation, synthetic data generation. \\
+\texttt{src/ess\_module\_b/} & Module B data adaptation, model training, regression engine, evaluation, API, CLI, feature construction. \\
+\texttt{src/ess\_ensemble/} & Deterministic fusion engine, final evaluation logic, public exports. \\
+\texttt{app.py} & Streamlit dashboard for interactive operation of Module A, Module B, and Ensemble sections. \\
+\texttt{configs/parameters.yaml} & Module A engineering/static/robustness parameters, per-parameter limits and danger directions. \\
+\texttt{configs/module\_b.yaml} & Module B model and safety configuration (e.g., ridge alphas, thresholds, risk multipliers). \\
+\texttt{tests/} & Automated test suite for modules, adapters, APIs, evaluation, and edge cases. \\
+\texttt{data/} & Input datasets and synthetic/acceptance data used for evaluation. \\
+\texttt{artifacts/} & Generated model artifacts and precomputed acceptance reports. \\
+\texttt{MODULE\_B.md} & Dedicated Module B technical documentation. \\
+\texttt{README.md} & User-facing setup, API, and workflow documentation. \\
+\texttt{Dockerfile}, \texttt{Dockerfile.module\_b}, \texttt{render.yaml} & Deployment support for UI and API services. \\
+\bottomrule
+\end{longtable}
+
+\section{Data Contract}
+
+\subsection{Long-form schema (primary)}
+Required columns:
+\begin{itemize}[nosep]
+  \item \texttt{component\_id}, \texttt{lot\_id}, \texttt{part\_number}, \texttt{parameter}, \texttt{time\_h}, \texttt{value}, \texttt{unit}, \texttt{test\_condition\_id}
+\end{itemize}
+
+Required per-parameter context fields (from configuration):
+\begin{itemize}[nosep]
+  \item \texttt{temperature\_c}, \texttt{voltage\_v}, \texttt{test\_mode}
+\end{itemize}
+
+Optional engineering / label columns:
+\begin{itemize}[nosep]
+  \item \texttt{datasheet\_min}, \texttt{datasheet\_max}, \texttt{delta\_limit}, \texttt{actual\_value\_168h}, \texttt{is\_anomaly}, \texttt{defect\_type}
+\end{itemize}
+
+\subsection{Wide-organizer compatibility}
+Adapters convert \texttt{Value\_0h}, \texttt{Value\_24h}, \texttt{Value\_168h} into the long form.  
+Module B also accepts \texttt{Value\_168h} or \texttt{actual\_value\_168h} during training/evaluation.
+
+\section{Module A: Dynamic Outlier Detection}
+
+\subsection{High-level flow}
+\begin{enumerate}
+  \item Validate batch and convert units to canonical units.
+  \item Build per-row history/historical features.
+  \item Fit/load reference profile (lot-wise and global historical stats).
+  \item Score each measurement using robust statistics and anomaly rules.
+  \item Aggregate per-component worst-status and risk.
+\end{enumerate}
+
+\subsection{Validation and normalization}
+Validation marks invalid records and logs structured issues:
+\begin{itemize}[nosep]
+  \item missing required columns/values,
+  \item unsupported checkpoints,
+  \item non-numeric values,
+  \item unit or transform failures,
+  \item duplicate records,
+  \item missing required checkpoints up to \texttt{as\_of\_h}.
+\end{itemize}
+All values are converted by a dedicated unit converter into canonical units.
+
+\subsection{Reference profile}
+Reference fitting builds:
+\begin{itemize}[nosep]
+  \item historical distributions per \((\text{part},\text{parameter},\text{time},\text{condition})\),
+  \item transformed-value counterparts,
+  \item slope distributions by time transitions,
+  \item lot-median baselines,
+  \item optional unsupervised models:
+  \begin{itemize}
+    \item Isolation Forest on engineered features,
+    \item context-specific MinCovDet Mahalanobis models.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Robust statistical features and formulas}
+For a value \(x\), reference median \(m\), MAD \(d\), and small constant \(\epsilon\):
+\[
+z_{\mathrm{robust}}=\frac{x-m}{\max(1.4826\,d,\epsilon)}
+\]
+This is applied on transformed values to both lot-local and historical groups.
+
+Additional risk-aware quantities:
+\[
+\text{IQR distance}(x)=
+\begin{cases}
+\dfrac{x-Q_3}{IQR}, & x>Q_3\\
+\dfrac{x-Q_1}{IQR}, & x<Q_1\\
+0, & Q_1\le x\le Q_3
+\end{cases}
+\]
+and direction-aware risk:
+\[
+R=
+\begin{cases}
+z, & \text{higher-is-bad}\\
+-z, & \text{lower-is-bad}\\
+|z|, & \text{two-sided}
+\end{cases}
+\]
+
+\subsection{Rule categories}
+Static checks produce immediate fail when spec bounds are broken:
+\[
+\text{margin} = \min(\text{spec\_max}-x,\;x-\text{spec\_min})
+\]
+Dynamic rules include robust-\(z\), IQR, and tail-percentile checks from lot and historical references.  
+Each rule maps to warning/severe categories and reason codes.
+
+\subsection{Status logic}
+Let \(\text{StaticFail}\), \(\text{QualityIssues}\) be booleans; \(E=|\text{severe}|\), \(W=|\text{warning}|\), and evidence weight \(w=2E+W\).  
+Then, for a valid row:
+\[
+\text{status}=\begin{cases}
+\texttt{STATIC\_FAIL}, & \text{if static fails}\\
+\texttt{RETEST\_REQUIRED}, & \text{if quality issues or missing references}\\
+\texttt{QUARANTINE}, & \text{if severe extreme OR } w\ge 8 \text{ OR corroborated slope logic}\\
+\texttt{MONITOR}, & w\ge 6\\
+\texttt{NORMAL}, & \text{otherwise}
+\end{cases}
+\]
+\[
+\text{risk\_score}=\min\left(1,\max\left(\frac{\max(0,R_{\mathrm{lot}})}{z_{\mathrm{extreme}}},\frac{\max(0,R_{\mathrm{hist}})}{z_{\mathrm{extreme}}},\frac{p_{\mathrm{if}}}{100},\frac{p_{\mathrm{mah}}}{100}\right)\right)
+\]
+where \(p_{\mathrm{if}}\), \(p_{\mathrm{mah}}\) are Isolation Forest and Mahalanobis percentiles; static failure or major data issues force risk \(=1\).
+
+\section{Module B: 168-hour Drift Predictor}
+
+\subsection{Input restriction and leakage safety}
+Module B intentionally uses only early-time data:
+\[
+\text{features are derived from } \{x_{0},x_{24}\}
+\]
+Future measurements (\(\ge 96\) h, \(\ge 168\) h targets) are ignored for forecasting input.
+
+\subsection{Engineered features}
+Feature vector:
+\[
+[x_{0},x_{24},\Delta_{0,24},s_{0,24},\text{relative\_drift},\log(x_{24}/x_0)]
+\]
+with slope \(\Delta_{0,24}/(24-0)\) and safe log handling with \(\epsilon\).
+
+\subsection{Model candidates and selection}
+For each context \((\text{part\_number},\text{parameter},\text{test\_condition\_id})\), candidates are:
+\begin{itemize}[nosep]
+  \item Ridge with \(\alpha\in\{0.01,0.1,1.0,10.0\}\),
+  \item Huber regression.
+\end{itemize}
+All pipelines are standardized (StandardScaler + regressor).  
+Lot-grouped \(K\)-fold CV (on lot IDs) provides out-of-fold MAE for each candidate:
+\[
+\mathrm{MAE}_{\text{candidate}}=\frac1N\sum_i|y_i-\hat y_i^{\mathrm{CV}}|
+\]
+Winner is min MAE, with deterministic tie preference for Ridge-style stability.
+
+\subsection{Baselines}
+Besides the model forecast \(\hat y_{168}^{\text{model}}\):
+\[
+\hat y_{168}^{\text{persist}}=x_{24}
+\]
+\[
+\hat y_{168}^{\text{linear}} = x_{24} + 6(x_{24}-x_0)=7x_{24}-6x_0
+\]
+
+\subsection{Safety slope}
+Direction-aware total drift rate:
+\[
+ s_{\mathrm{pred}} = \frac{\max(0,\mathrm{dir}(\hat y_{168}-x_0))}{168}
+\]
+where \(\mathrm{dir}(\cdot)\) applies danger direction (higher/lower/abs).
+
+Safety-slope candidates:
+\[
+ s_{\delta} = \frac{|\Delta_{\mathrm{limit}}|}{168}
+\]
+\[
+ s_{\mathrm{hist}}=\text{historical safe quantile}
+\]
+\[
+ s_{\mathrm{guard}}=\max\left(0,\frac{\text{spec\_guard}-x_0}{168}\right)
+\]
+The binding safety slope is the minimum positive candidate (when available).
+
+\subsection{Conservative interval and decision}
+\[
+ s_{\mathrm{conv}} = \frac{\max(0,\mathrm{dir}(x_{\text{conservative}}-x_0))}{168}
+\]
+with \(x_{\text{conservative}}\) adjusted by danger-side residual margin (e.g., + for higher-bad, - for lower-bad).  
+Decision rules (priority):
+\begin{itemize}[nosep]
+  \item \texttt{STATIC\_FAIL} if any early measurement violates spec limits or if unsafe limit context exists.
+  \item \texttt{RETEST\_REQUIRED} if limits/constraints missing/invalid.
+  \item \texttt{EARLY\_REJECT} if
+  \[
+  s_{\mathrm{pred}}>s_{\mathrm{safe}}
+  \]
+  or linear sentinel confirms strongly unsafe acceleration.
+  \item else \texttt{CONTINUE\_SCREENING}.
+\end{itemize}
+Risk is normalized against safety slope with conservative upper cap at 1.
+
+\section{Ensemble: Safety-First Fusion}
+
+\subsection{Precedence rules}
+For each component:
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{REJECT\_EARLY} if Module A status is \texttt{QUARANTINE} or \texttt{STATIC\_FAIL} OR Module B decision is \texttt{EARLY\_REJECT} or \texttt{STATIC\_FAIL}.
+  \item \textbf{RETEST\_REQUIRED} if any module output is missing or invalid.
+  \item \textbf{MONITOR} if Module A is \texttt{MONITOR} and no hard reject.
+  \item \textbf{CONTINUE\_SCREENING} otherwise.
+\end{enumerate}
+
+\subsection{Risk fusion}
+\[
+ r_E = 1-(1-r_A)(1-r_B)
+\]
+bounded in \([0,1]\). This is probability-style union risk that never decreases either module’s individual risk.
+
+\section{Evaluation Design and Results}
+
+\subsection{Metrics}
+For binary screening outcome \(y\in\{\text{defect},\text{normal}\}\), decision \(d\in\{\text{action},\text{no action}\}\):
+\[
+\mathrm{Recall}=\frac{TP}{TP+FN},\qquad
+\mathrm{Precision}=\frac{TP}{TP+FP},\qquad
+\mathrm{FalseFlag}=\frac{FP}{FP+TN}
+\]
+Weighted screening cost:
+\[
+ C = 10\cdot FN + 1\cdot FP
+\]
+with false-negative multiplier from Module B config (10.0).
+
+\subsection{Splitting}
+Lot-safe evaluation splits lots into train / validation / test using fixed random seed and fraction policy so that no lot appears in multiple partitions.
+\[
+\text{train}\cup \text{validation}\cup \text{test}=\text{all lots},\qquad \text{disjoint partitions}
+\]
+
+\subsection{Observed benchmark snapshot (from checked-in artifacts)}
+\paragraph{Module A acceptance report (snapshot)}
+\begin{itemize}[nosep]
+  \item Test: \(\text{defect recall}=1.0\), \(\text{false flag}=0.0204\).
+  \item Validation: \(\text{defect recall}=1.0\), \(\text{false flag}=0.0340\).
+\end{itemize}
+
+\paragraph{Module B acceptance report (snapshot)}
+\begin{itemize}[nosep]
+  \item Test: \(TP=34, FN=1, FP=28, TN=537\),
+  \[
+  \mathrm{Recall}=0.9714,\quad \mathrm{Precision}=0.5484,\quad \mathrm{FalseFlag}=0.04956,\quad \mathrm{MAE}=0.4376
+  \]
+  \item Validation: \(TP=10, FN=0, FP=55, TN=543\), \(\mathrm{Recall}=1.0\), \(\mathrm{FalseFlag}=0.0797\), \(\mathrm{MAE}=0.2285\).
+\end{itemize}
+
+\paragraph{Ensemble acceptance report (snapshot)}
+\begin{itemize}[nosep]
+  \item Test: \(\text{component count}=600\), \(\text{RECALL}=0.9714\), \(FN=1\), \(FP=38\), \(\text{FalseFlag}=0.0673\), \(w\_cost=48\).
+  \item Pattern counts: \texttt{BOTH\_MODULES\_REJECT}=11, \texttt{MODULE\_A\_ONLY\_REJECT}=5, \texttt{MODULE\_B\_ONLY\_REJECT}=51.
+\end{itemize}
+
+\section{Interfaces and Deployment}
+
+\subsection{CLI}
+\begin{itemize}[nosep]
+  \item \texttt{ess-module-a}: generate/fit/score/evaluate/serve
+  \item \texttt{ess-module-b}: fit/forecast/evaluate/serve
+  \item \texttt{ess-ensemble}: lot-safe evaluate and emit final acceptance report
+\end{itemize}
+
+\subsection{FastAPI endpoints}
+\begin{itemize}[nosep]
+  \item Module A: \texttt{GET /v1/module-a/model-info}, \texttt{POST /v1/module-a/score-lot}, \texttt{GET /health}
+  \item Module B: \texttt{GET /v1/module-b/model-info}, \texttt{POST /v1/module-b/forecast-lot}, \texttt{GET /health}
+\end{itemize}
+
+\subsection{Streamlit app}
+Three interactive sections:
+\begin{itemize}[nosep]
+  \item Module A diagnostics and component evidence,
+  \item Module B explanation and per-parameter forecast evidence,
+  \item Ensemble final results, agreement matrix, fused risk, audit trail.
+\end{itemize}
+
+\section{Quality, Explainability, and Traceability}
+
+Every output record preserves:
+\begin{itemize}[nosep]
+  \item per-parameter reason codes,
+  \item risk score,
+  \item decision labels,
+  \item selected model and version metadata,
+  \item forecast feature values and contributions (for linear/regression path),
+  \item decision sources and validation issues.
+\end{itemize}
+Missing/invalid inputs are mapped to explicit retest requirements, not silent clears.
+
+\section{Operational Notes}
+\begin{itemize}[nosep]
+  \item Synthetic metrics are prevalidated and useful for software acceptance; not equivalent to hardware qualification evidence.
+  \item For production adoption, retrain artifacts on approved hardware lots and lock configuration versions.
+  \item Any change to thresholds (e.g., recall bias, quantiles, guard band fraction) should be documented via artifact and config versioning.
+\end{itemize}
+
+\section{References to Config Files}
+\begin{itemize}[nosep]
+  \item \texttt{configs/parameters.yaml} (Module A defaults and thresholds),
+  \item \texttt{configs/module\_b.yaml} (Module B model/safety hyperparameters),
+  \item \texttt{artifacts/acceptance\_evaluation.json},
+  \item \texttt{artifacts/module\_b\_acceptance\_evaluation.json},
+  \item \texttt{artifacts/ensemble\_acceptance\_evaluation.json}.
+\end{itemize}
+
+\section{Conclusion}
+This project integrates rule-based statistical screening, machine-learning-based drift forecasting, and conservative ensemble fusion to reduce escape risk with auditable behavior.  
+The design intentionally favors traceability and safety over maximal model opacity, with explicit retest and reject precedence, lot-safe evaluation, and a full operational interface stack (CLI, API, UI).
+\end{document}
