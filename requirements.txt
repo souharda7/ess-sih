@@ -1,3 +1,11 @@
--e .
-streamlit>=1.30.0
-plotly>=5.18.0
+streamlit
+plotly
+pandas
+numpy
+scikit-learn
+scipy
+joblib
+PyYAML
+fastapi
+pydantic
+uvicorn
