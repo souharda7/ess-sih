@@ -221,7 +221,7 @@ def _first_numeric(frame: pd.DataFrame, column: str) -> float | None:
     return float(values.iloc[0]) if not values.empty else None
 
 
-def _display_number(value: object, unit: str = "") -> str:
+def _display_number(value: object, unit: str = "", format_str: str = ".5g") -> str:
     """Format optional engine values safely for inspector metrics."""
 
     try:
@@ -231,7 +231,7 @@ def _display_number(value: object, unit: str = "") -> str:
     if pd.isna(number):
         return "Unavailable"
     suffix = f" {unit}" if unit else ""
-    return f"{number:.5g}{suffix}"
+    return f"{number:{format_str}}{suffix}"
 
 
 def render_module_b(raw_df: pd.DataFrame) -> None:
@@ -569,12 +569,12 @@ def render_module_b(raw_df: pd.DataFrame) -> None:
     )
     a4.metric(
         "Danger Slope",
-        _display_number(audit_row.get("danger_directed_drift_rate_per_h"), f"{unit}/h"),
+        _display_number(audit_row.get("danger_directed_drift_rate_per_h"), f"{unit}/h", format_str=".3g"),
     )
     safety_value = audit_row.get("safety_slope_per_h")
     a5.metric(
         "Safety Slope",
-        _display_number(safety_value, f"{unit}/h"),
+        _display_number(safety_value, f"{unit}/h", format_str=".3g"),
     )
     risk_value = audit_row.get("risk_score")
     a6.metric(
@@ -1240,7 +1240,7 @@ with col_risk:
         color_discrete_map=STATUS_COLOR,
         nbins=20,
         title="Risk Score Distribution",
-        labels={"risk_score": "Risk Score (0–1)", "status": "Status"},
+        labels={"risk_score": "Risk Score (0-1)", "status": "Status"},
     )
     fig_risk.update_layout(bargap=0.05)
     st.plotly_chart(fig_risk, use_container_width=True)
