@@ -57,7 +57,7 @@ Run the Module B demo:
 
 ## Interactive QA Dashboard
 
-The project includes a full-featured, professional QA dashboard built with Streamlit. It connects directly to the ESS engine to provide real-time multivariate anomaly scoring (Isolation Forest & Mahalanobis), drift trajectory analysis, and component-level deep-dives.
+The project includes a full-featured QA dashboard built with Streamlit. Its sidebar switches between Module A dynamic outlier detection and Module B explainable 168-hour drift prediction. Module B uses only the selected lot's 0-hour and 24-hour readings, shows early-rejection and retest decisions, compares the model forecast with persistence and linear baselines, visualizes the calculated safety-slope boundary, and exposes per-component feature contributions for QA review.
 
 To run it locally:
 ```bash
