@@ -1,0 +1,14 @@
+services:
+  # The FastAPI Backend
+  - type: web
+    name: ess-backend
+    env: python
+    buildCommand: "pip install -e '.[dev]'"
+    startCommand: "ess-module-a serve --reference artifacts/reference.json --config configs/parameters.yaml --host 0.0.0.0 --port $PORT"
+
+  # The Streamlit Frontend (Dashboard)
+  - type: web
+    name: ess-frontend
+    env: python
+    buildCommand: "pip install -e '.[dev]'"
+    startCommand: "streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true"
