@@ -129,8 +129,7 @@ Reference fitting builds:
   \item lot-median baselines,
   \item optional unsupervised models:
   \begin{itemize}
-    \item Isolation Forest on engineered features,
-    \item context-specific MinCovDet Mahalanobis models.
+  \item context-specific MinCovDet Mahalanobis models.
   \end{itemize}
 \end{itemize}
 
@@ -181,9 +180,9 @@ Then, for a valid row:
 \end{cases}
 \]
 \[
-\text{risk\_score}=\min\left(1,\max\left(\frac{\max(0,R_{\mathrm{lot}})}{z_{\mathrm{extreme}}},\frac{\max(0,R_{\mathrm{hist}})}{z_{\mathrm{extreme}}},\frac{p_{\mathrm{if}}}{100},\frac{p_{\mathrm{mah}}}{100}\right)\right)
+\text{risk\_score}=\min\left(1,\max\left(\frac{\max(0,R_{\mathrm{lot}})}{z_{\mathrm{extreme}}},\frac{\max(0,R_{\mathrm{hist}})}{z_{\mathrm{extreme}}},\frac{p_{\mathrm{mah}}}{100}\right)\right)
 \]
-where \(p_{\mathrm{if}}\), \(p_{\mathrm{mah}}\) are Isolation Forest and Mahalanobis percentiles; static failure or major data issues force risk \(=1\).
+where \(p_{\mathrm{mah}}\) is the Mahalanobis percentile; static failure or major data issues force risk \(=1\).
 
 \section{Module B: 168-hour Drift Predictor}
 

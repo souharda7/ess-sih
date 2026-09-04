@@ -2,7 +2,7 @@
   "ensemble_version": "0.1.0",
   "module_a_model_info": {
     "config_version": "1.0.0",
-    "isolation_forest_enabled": true,
+    "isolation_forest_enabled": false,
     "mahalanobis_context_count": 8,
     "module_version": "0.1.0",
     "reference_created_at_utc": "2026-09-04T14:46:09.687966+00:00",

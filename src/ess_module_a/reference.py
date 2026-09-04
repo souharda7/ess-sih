@@ -11,10 +11,9 @@ import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.covariance import MinCovDet
-from sklearn.ensemble import IsolationForest
 
 from .config import ModuleAConfig
-from .features import build_feature_frame, compute_slopes, feature_matrix
+from .features import build_feature_frame, compute_slopes
 from .models import MahalanobisArtifact, ReferenceProfile
 from .statistics import distribution_stats
 from .validation import validate_measurements
@@ -81,19 +80,6 @@ def fit_reference_profile(measurements: pd.DataFrame, config: ModuleAConfig) -> 
     )
 
     features = build_feature_frame(frame, config, profile)
-    matrix = feature_matrix(features)
-    if len(matrix) >= 50:
-        estimator = IsolationForest(
-            n_estimators=200,
-            contamination="auto",
-            random_state=config.random_seed,
-            n_jobs=-1,
-        )
-        estimator.fit(matrix)
-        scores = -estimator.score_samples(matrix)
-        profile.isolation_forest = estimator
-        profile.isolation_training_scores = np.sort(scores).astype(float).tolist()
-
     profile.mahalanobis_models = _fit_mahalanobis(features)
     return profile
 

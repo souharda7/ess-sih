@@ -1270,7 +1270,6 @@ else:
             "status":        True,
             "risk_score":    ":.3f",
             "robust_z_lot":  ":.2f",
-            "isolation_percentile": ":.1f",
             "mahalanobis_percentile": ":.1f",
         },
         title=f"24 h  {selected_param}  ({unit_label})",
@@ -1361,67 +1360,33 @@ st.plotly_chart(fig_ts, use_container_width=True)
 st.divider()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ⑥ Multivariate scores heatmap (Isolation Forest + Mahalanobis)
+# ⑥ Multivariate scores heatmap (Mahalanobis)
 # ─────────────────────────────────────────────────────────────────────────────
 st.markdown("### Multivariate Anomaly Scores (All Parameters Together)")
+st.markdown("#### Mahalanobis Percentile @ 24 h")
 
-mv_cols  = ["component_id", "parameter", "time_h",
-            "isolation_percentile", "mahalanobis_percentile",
-            "robust_z_lot", "slope_robust_z_lot", "status"]
-mv_data  = param_df[mv_cols].dropna(subset=["isolation_percentile"])
-
-col_iso, col_mah = st.columns(2)
-
-with col_iso:
-    st.markdown("#### Isolation Forest Percentile @ 24 h")
-    iso24 = (
-        param_df[param_df["time_h"] == 24.0]
-        .pivot_table(index="component_id", columns="parameter",
-                     values="isolation_percentile", aggfunc="first")
-        .fillna(0)
+mah24 = (
+    param_df[param_df["time_h"] == 24.0]
+    .pivot_table(index="component_id", columns="parameter",
+                 values="mahalanobis_percentile", aggfunc="first")
+    .fillna(0)
+)
+if not mah24.empty:
+    fig_mah = px.imshow(
+        mah24.values,
+        x=mah24.columns.tolist(),
+        y=mah24.index.tolist(),
+        color_continuous_scale="RdYlGn_r",
+        zmin=0, zmax=100,
+        aspect="auto",
+        title="Mahalanobis Percentile (higher = more anomalous)",
+        labels={"color": "Percentile"},
     )
-    if not iso24.empty:
-        fig_iso = px.imshow(
-            iso24.values,
-            x=iso24.columns.tolist(),
-            y=iso24.index.tolist(),
-            color_continuous_scale="RdYlGn_r",
-            zmin=0, zmax=100,
-            aspect="auto",
-            title="Isolation Forest Percentile (higher = more anomalous)",
-            labels={"color": "Percentile"},
-        )
-        fig_iso.update_layout(height=400)
-        fig_iso.add_hline(y=0, line_color="rgba(0,0,0,0)")  # spacer
-        st.plotly_chart(fig_iso, use_container_width=True)
-        st.caption("Components at 99.5th+ percentile are SEVERE; 97.5th+ are WARNING.")
-    else:
-        st.info("No isolation forest scores available at 24 h.")
-
-with col_mah:
-    st.markdown("#### Mahalanobis Percentile @ 24 h")
-    mah24 = (
-        param_df[param_df["time_h"] == 24.0]
-        .pivot_table(index="component_id", columns="parameter",
-                     values="mahalanobis_percentile", aggfunc="first")
-        .fillna(0)
-    )
-    if not mah24.empty:
-        fig_mah = px.imshow(
-            mah24.values,
-            x=mah24.columns.tolist(),
-            y=mah24.index.tolist(),
-            color_continuous_scale="RdYlGn_r",
-            zmin=0, zmax=100,
-            aspect="auto",
-            title="Mahalanobis Percentile (higher = more anomalous)",
-            labels={"color": "Percentile"},
-        )
-        fig_mah.update_layout(height=400)
-        st.plotly_chart(fig_mah, use_container_width=True)
-        st.caption("Mahalanobis detects unusual *combinations* of parameters.")
-    else:
-        st.info("No Mahalanobis scores available at 24 h.")
+    fig_mah.update_layout(height=400)
+    st.plotly_chart(fig_mah, use_container_width=True)
+    st.caption("Mahalanobis detects unusual *combinations* of parameters.")
+else:
+    st.info("No Mahalanobis scores available at 24 h.")
 
 st.divider()
 
@@ -1570,7 +1535,6 @@ else:
                     "robust_z_lot", "robust_z_historical",
                     "lot_percentile", "historical_percentile",
                     "slope", "slope_robust_z_lot", "slope_robust_z_historical",
-                    "isolation_score", "isolation_percentile",
                     "mahalanobis_score", "mahalanobis_percentile",
                     "risk_score", "status",
                 ]
@@ -1579,7 +1543,6 @@ else:
                 for float_col in ["normalized_value","static_margin","robust_z_lot",
                                   "robust_z_historical","lot_percentile","historical_percentile",
                                   "slope","slope_robust_z_lot","slope_robust_z_historical",
-                                  "isolation_score","isolation_percentile",
                                   "mahalanobis_score","mahalanobis_percentile","risk_score"]:
                     if float_col in score_tbl.columns:
                         score_tbl[float_col] = score_tbl[float_col].apply(
@@ -1696,5 +1659,5 @@ if st.button("Compute Cross-Lot Trend (Warning: Takes ~2-3 minutes to score all 
 st.divider()
 st.caption(
     "ESS QA Inspector · ess_module_a v0.1.0 · "
-    "Classification via Isolation Forest + Mahalanobis + Robust Z + IQR + Static Spec checks."
+    "Classification via Mahalanobis + Robust Z + IQR + Static Spec checks."
 )

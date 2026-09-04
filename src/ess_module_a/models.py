@@ -76,8 +76,6 @@ class ReferenceProfile:
     historical_transformed: dict[tuple[Any, ...], DistributionStats]
     slopes: dict[tuple[Any, ...], DistributionStats]
     lot_medians: dict[tuple[Any, ...], DistributionStats]
-    isolation_forest: Any | None = None
-    isolation_training_scores: list[float] = field(default_factory=list)
     mahalanobis_models: dict[tuple[Any, ...], Any] = field(default_factory=dict)
     library_versions: dict[str, str] = field(default_factory=dict)
 

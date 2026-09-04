@@ -12,7 +12,7 @@ import pandas as pd
 
 from .config import ModuleAConfig, default_config
 from .detectors import evaluate_robust_rules, static_check
-from .features import build_feature_frame, feature_matrix
+from .features import build_feature_frame
 from .models import QAStatus, ReferenceProfile, STATUS_PRIORITY, worst_status
 from .reference import fit_reference_profile, load_reference, save_reference
 from .statistics import direction_risk, percentile_of_scores, robust_z
@@ -80,7 +80,6 @@ class ModuleAEngine:
             "reference_version": reference.version if reference else None,
             "reference_created_at_utc": reference.created_at_utc if reference else None,
             "training_lot_count": len(reference.training_lot_ids) if reference else 0,
-            "isolation_forest_enabled": bool(reference and reference.isolation_forest is not None),
             "mahalanobis_context_count": len(reference.mahalanobis_models) if reference else 0,
         }
 
@@ -135,20 +134,10 @@ class ModuleAEngine:
 
     def _attach_model_scores(self, features: pd.DataFrame) -> pd.DataFrame:
         result = features.copy()
-        result["isolation_score"] = np.nan
-        result["isolation_percentile"] = np.nan
         result["mahalanobis_score"] = np.nan
         result["mahalanobis_percentile"] = np.nan
         if result.empty:
             return result
-
-        if self.reference and self.reference.isolation_forest is not None:
-            scores = -self.reference.isolation_forest.score_samples(feature_matrix(result))
-            result["isolation_score"] = scores
-            result["isolation_percentile"] = [
-                percentile_of_scores(float(score), self.reference.isolation_training_scores)
-                for score in scores
-            ]
 
         context_columns = ["part_number", "time_h", "test_condition_id"]
         for context, group in result.groupby(context_columns, sort=False):
@@ -210,8 +199,6 @@ class ModuleAEngine:
                 "slope_from_zero": None,
                 "slope_robust_z_lot": None,
                 "slope_robust_z_historical": None,
-                "isolation_score": None,
-                "isolation_percentile": None,
                 "mahalanobis_score": None,
                 "mahalanobis_percentile": None,
                 "status": QAStatus.RETEST_REQUIRED.value,
@@ -225,15 +212,6 @@ class ModuleAEngine:
         reasons = [*static_reasons, *rules["reason_codes"]]
         warning_categories = set(rules["warning_categories"])
         severe_categories = set(rules["severe_categories"])
-
-        isolation_percentile = _number(feature.get("isolation_percentile"))
-        if isolation_percentile is not None:
-            if isolation_percentile >= self.config.tail_severe_percentile:
-                severe_categories.add("isolation_forest")
-                reasons.append("ISOLATION_FOREST_SEVERE")
-            elif isolation_percentile >= self.config.tail_warning_percentile:
-                warning_categories.add("isolation_forest")
-                reasons.append("ISOLATION_FOREST_WARNING")
 
         mahalanobis_percentile = _number(feature.get("mahalanobis_percentile"))
         if mahalanobis_percentile is not None:
@@ -270,7 +248,6 @@ class ModuleAEngine:
             max(0.0, _number(feature.get("risk_lot_z")) or 0.0) / self.config.robust_z_extreme,
             max(0.0, _number(feature.get("risk_historical_z")) or 0.0)
             / self.config.robust_z_extreme,
-            (isolation_percentile or 0.0) / 100.0,
             (mahalanobis_percentile or 0.0) / 100.0,
         ]
         risk_score = min(1.0, max(risk_values))
@@ -294,8 +271,6 @@ class ModuleAEngine:
             "slope_start_h": _number(feature.get("slope_start_h")),
             "slope_robust_z_lot": _number(feature.get("slope_lot_z")),
             "slope_robust_z_historical": _number(feature.get("slope_historical_z")),
-            "isolation_score": _number(feature.get("isolation_score")),
-            "isolation_percentile": isolation_percentile,
             "mahalanobis_score": _number(feature.get("mahalanobis_score")),
             "mahalanobis_percentile": mahalanobis_percentile,
             "status": status.value,

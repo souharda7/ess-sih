@@ -27,7 +27,7 @@ CSV/JSON lot
   → validation and unit normalization
   → current-lot + historical reference features
   → robust Z / IQR / percentile / slope rules
-  → Isolation Forest + robust Mahalanobis distance
+  → robust Mahalanobis distance (with robust Z / IQR / percentile rule stack)
   → explainable evidence fusion
   → parameter results, component summaries, and lot alerts
 ```

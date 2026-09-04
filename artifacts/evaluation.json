@@ -44,7 +44,7 @@
     "reference_version": "1.0.0",
     "reference_created_at_utc": "2026-09-03T18:21:15.484708+00:00",
     "training_lot_count": 17,
-    "isolation_forest_enabled": true,
+    "isolation_forest_enabled": false,
     "mahalanobis_context_count": 8
   },
   "validation": {

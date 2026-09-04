@@ -12,7 +12,6 @@ def test_health_and_model_info(trained_engine):
     assert health.json()["reference_loaded"] is True
     info = client.get("/v1/module-a/model-info")
     assert info.status_code == 200
-    assert info.json()["isolation_forest_enabled"] is True
 
 
 def test_score_endpoint(trained_engine, test_lot):
