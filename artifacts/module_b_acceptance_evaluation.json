@@ -42,7 +42,7 @@
     "config_version": "1.0.0",
     "artifact_loaded": true,
     "artifact_version": "1.0.0",
-    "artifact_created_at_utc": "2026-09-04T13:04:02.820504+00:00",
+    "artifact_created_at_utc": "2026-09-04T13:21:20.585356+00:00",
     "training_lot_count": 18,
     "context_model_count": 10,
     "parameter_fallback_model_count": 5,
@@ -298,40 +298,40 @@
     "target_h": 168,
     "regression": {
       "count": 3000,
-      "mae": 0.2926599172440129,
-      "median_absolute_error": 0.03206567470406263,
-      "rmse": 2.241919627880442,
-      "r2": 0.953573218133705,
-      "p95_absolute_error": 0.750153888148355,
-      "persistence_mae": 0.43694941111666663,
-      "linear_extrapolation_mae": 1.3424371508166668,
-      "improvement_over_persistence_percent": 33.022013579079534,
-      "improvement_over_linear_percent": 78.19935800599869
+      "mae": 0.4375770767951149,
+      "median_absolute_error": 0.0323893531449535,
+      "rmse": 3.2330677087338167,
+      "r2": 0.9102545944025237,
+      "p95_absolute_error": 0.7771885657755817,
+      "persistence_mae": 0.5884706841299999,
+      "linear_extrapolation_mae": 1.4532620881833334,
+      "improvement_over_persistence_percent": 25.6416524058403,
+      "improvement_over_linear_percent": 69.89000949291169
     },
     "regression_by_parameter": {
       "iddq": {
         "count": 600,
-        "mae": 0.518276259156859,
+        "mae": 0.9101791841164439,
         "median_absolute_error": 0.3655952236563458,
-        "rmse": 0.8606062654567582,
-        "r2": 0.970721786253345,
-        "p95_absolute_error": 1.3445311834165872,
-        "persistence_mae": 0.86429042665,
-        "linear_extrapolation_mae": 2.9035648964500003,
-        "improvement_over_persistence_percent": 40.03447878444009,
-        "improvement_over_linear_percent": 82.15034698241043
+        "rmse": 4.569786693461629,
+        "r2": 0.5444203518368478,
+        "p95_absolute_error": 1.3590044384168458,
+        "persistence_mae": 1.2837674005333333,
+        "linear_extrapolation_mae": 3.180698368666667,
+        "improvement_over_persistence_percent": 29.10092718211137,
+        "improvement_over_linear_percent": 71.38429745232376
       },
       "leakage_current": {
         "count": 600,
-        "mae": 0.8407367428840494,
-        "median_absolute_error": 0.19609749016564315,
-        "rmse": 4.926064027316769,
-        "r2": 0.4177010970742927,
-        "p95_absolute_error": 0.6068721319953306,
-        "persistence_mae": 1.0754813534833332,
-        "linear_extrapolation_mae": 3.307653392716667,
-        "improvement_over_persistence_percent": 21.826934501372705,
-        "improvement_over_linear_percent": 74.58207849905551
+        "mae": 0.958233941750716,
+        "median_absolute_error": 0.19824294108961915,
+        "rmse": 5.33275658215737,
+        "r2": 0.37855232336604605,
+        "p95_absolute_error": 0.6282591108409834,
+        "persistence_mae": 1.19297855235,
+        "linear_extrapolation_mae": 3.40220359035,
+        "improvement_over_persistence_percent": 19.677186160377335,
+        "improvement_over_linear_percent": 71.83490298850286
       },
       "output_high_voltage": {
         "count": 600,
@@ -347,41 +347,41 @@
       },
       "propagation_delay": {
         "count": 600,
-        "mae": 0.08992579365949709,
+        "mae": 0.3032186203786482,
         "median_absolute_error": 0.04480329367221758,
-        "rmse": 0.351868673503741,
-        "r2": 0.9118725669611676,
-        "p95_absolute_error": 0.1546516089490302,
-        "persistence_mae": 0.20855964093333337,
-        "linear_extrapolation_mae": 0.3959318150999999,
-        "improvement_over_persistence_percent": 56.88245661669407,
-        "improvement_over_linear_percent": 77.28755552599766
+        "rmse": 1.7150420675220839,
+        "r2": 0.2542576427214671,
+        "p95_absolute_error": 0.1677110394786286,
+        "persistence_mae": 0.42730548809999996,
+        "linear_extrapolation_mae": 0.5782807145,
+        "improvement_over_persistence_percent": 29.039380765526786,
+        "improvement_over_linear_percent": 47.56549669120113
       },
       "threshold_voltage": {
         "count": 600,
-        "mae": 0.005912120281034012,
-        "median_absolute_error": 0.004965279159982572,
-        "rmse": 0.007411744783285665,
-        "r2": 0.9802297592970225,
-        "p95_absolute_error": 0.014586757053722588,
-        "persistence_mae": 0.010121744983333333,
-        "linear_extrapolation_mae": 0.044351092316666674,
-        "improvement_over_persistence_percent": 41.589910724197985,
-        "improvement_over_linear_percent": 86.66973016397998
+        "mae": 0.007804967491141612,
+        "median_absolute_error": 0.00498857469231162,
+        "rmse": 0.024898152107015653,
+        "r2": 0.8027195665686231,
+        "p95_absolute_error": 0.014975398635553364,
+        "persistence_mae": 0.012008090133333331,
+        "linear_extrapolation_mae": 0.04444320990000001,
+        "improvement_over_persistence_percent": 35.00242416172614,
+        "improvement_over_linear_percent": 82.43833533018143
       }
     },
     "screening": {
       "component_count": 600,
-      "true_positives": 14,
-      "false_negatives": 0,
-      "false_positives": 48,
-      "true_negatives": 538,
-      "defect_recall": 1.0,
-      "precision": 0.22580645161290322,
-      "false_flag_rate": 0.08191126279863481,
+      "true_positives": 34,
+      "false_negatives": 1,
+      "false_positives": 28,
+      "true_negatives": 537,
+      "defect_recall": 0.9714285714285714,
+      "precision": 0.5483870967741935,
+      "false_flag_rate": 0.049557522123893805,
       "false_negative_cost_multiplier": 10.0,
-      "weighted_error_cost": 48.0,
-      "worst_lot_recall": 1.0,
+      "weighted_error_cost": 38.0,
+      "worst_lot_recall": 0.5,
       "recall_by_defect_type": {
         "accelerating": {
           "count": 4,
@@ -403,13 +403,25 @@
           "detected": 3,
           "recall": 1.0
         },
+        "late_onset_subtle_escape": {
+          "count": 1,
+          "detected": 0,
+          "recall": 0.0
+        },
+        "latent_drift_flagged": {
+          "count": 20,
+          "detected": 20,
+          "recall": 1.0
+        },
         "static_fail": {
           "count": 1,
           "detected": 1,
           "recall": 1.0
         }
       },
-      "false_negative_components": [],
+      "false_negative_components": [
+        "LOT_018_C0045"
+      ],
       "decision_counts": {
         "CONTINUE_SCREENING": 538,
         "EARLY_REJECT": 61,
