@@ -2,7 +2,7 @@
 
 An offline, explainable screening layer for burn-in/ESS parametric data. It preserves static specification checks and adds lot-relative, historical, drift, Isolation Forest, and robust multivariate evidence.
 
-To run the app, [Click here][https://ess-inspector.streamlit.app/]
+To run the app, [Click here](https://ess-inspector.streamlit.app/)
 
 ## What it returns
 
