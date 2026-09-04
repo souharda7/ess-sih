@@ -1,3 +1,4 @@
 [console_scripts]
+ess-ensemble = ess_ensemble.cli:main
 ess-module-a = ess_module_a.cli:main
 ess-module-b = ess_module_b.cli:main

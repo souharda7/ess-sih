@@ -1,6 +1,6 @@
-# ESS Burn-In Screening — Modules A and B
+# ESS Burn-In Screening — Modules A, B, and Final Ensemble
 
-An offline, explainable screening system for burn-in/ESS parametric data. Module A performs dynamic outlier detection; Module B forecasts the 168-hour value from measurements available at 0 and 24 hours and flags unsafe projected drift.
+An offline, explainable screening system for burn-in/ESS parametric data. Module A performs dynamic outlier detection; Module B forecasts the 168-hour value from measurements available at 0 and 24 hours; and the safety-first ensemble combines both signals into one auditable 24-hour disposition.
 
 To run the app, [Click here](https://ess-inspector.streamlit.app/)
 
@@ -13,6 +13,12 @@ NORMAL | MONITOR | QUARANTINE | STATIC_FAIL | RETEST_REQUIRED
 ```
 
 `QUARANTINE` means engineering review or retest is recommended. It is not an autonomous hardware disposition.
+
+The combined ensemble returns one final early-screening disposition per component:
+
+```text
+CONTINUE_SCREENING | MONITOR | RETEST_REQUIRED | REJECT_EARLY
+```
 
 ## Architecture
 
@@ -57,7 +63,7 @@ Run the Module B demo:
 
 ## Interactive QA Dashboard
 
-The project includes a full-featured QA dashboard built with Streamlit. Its sidebar switches between Module A dynamic outlier detection and Module B explainable 168-hour drift prediction. Module B uses only the selected lot's 0-hour and 24-hour readings, shows early-rejection and retest decisions, compares the model forecast with persistence and linear baselines, visualizes the calculated safety-slope boundary, and exposes per-component feature contributions for QA review.
+The project includes a full-featured QA dashboard built with Streamlit. Its sidebar switches among Module A dynamic outlier detection, Module B explainable 168-hour drift prediction, and an Ensemble Final Results section. The ensemble shows the final disposition, module agreement, fused risk, parameter-level evidence, and the complete reason-code trail for every component.
 
 To run it locally:
 ```bash
@@ -209,6 +215,27 @@ docker build -f Dockerfile.module_b -t ess-module-b .
 docker run --rm -p 8001:8001 ess-module-b
 ```
 
+## Ensemble — final 24-hour disposition
+
+`ess_ensemble.EnsembleEngine` combines reports generated at the same 24-hour decision checkpoint. Its deterministic precedence is:
+
+1. `REJECT_EARLY` when Module A reports `QUARANTINE`/`STATIC_FAIL` or Module B reports `EARLY_REJECT`/`STATIC_FAIL`.
+2. `RETEST_REQUIRED` when neither module hard-rejects but either module cannot produce reliable evidence.
+3. `MONITOR` for Module A warning-level evidence without a hard rejection.
+4. `CONTINUE_SCREENING` only when both modules are clear.
+
+The ensemble risk uses `1 − (1 − Risk_A)(1 − Risk_B)`, which cannot dilute either module's risk. This score ranks components for review; the final disposition is determined by the explicit precedence above. Every result retains the original Module A and Module B statuses, risk scores, highest-risk parameters, and reason codes.
+
+Generate the lot-held-out ensemble acceptance report:
+
+```bash
+.venv/bin/ess-ensemble \
+  --input data/synthetic.csv \
+  --output artifacts/ensemble_acceptance_evaluation.json
+```
+
+The checked-in report evaluates both modules and their fusion at 24 hours using the same whole-lot split. Its unseen test partition detects 34/35 labelled defective components (97.14% recall), records one intentionally subtle late-onset false negative, and flags 6.73% of healthy components. These are synthetic software-acceptance results, not hardware-qualification claims.
+
 ## Input columns
 
 Required:
@@ -255,7 +282,7 @@ The initial thresholds are high-recall defaults and are configuration-controlled
 
 ```bash
 .venv/bin/pytest
-.venv/bin/pytest --cov=ess_module_a --cov=ess_module_b --cov-report=term-missing
+.venv/bin/pytest --cov=ess_module_a --cov=ess_module_b --cov=ess_ensemble --cov-report=term-missing
 ```
 
 The suite covers the 45 µA-in-a-10 µA-lot scenario, direction-aware thresholds, unit conversion, missing/duplicate readings, future-data leakage, static precedence, whole-lot alerts, Module B baseline equations, safety-slope binding, model contributions, wide/long adapters, lot-safe splits, and both APIs.

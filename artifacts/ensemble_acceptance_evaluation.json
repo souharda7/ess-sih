@@ -1,0 +1,336 @@
+{
+  "ensemble_version": "0.1.0",
+  "module_a_model_info": {
+    "config_version": "1.0.0",
+    "isolation_forest_enabled": true,
+    "mahalanobis_context_count": 8,
+    "module_version": "0.1.0",
+    "reference_created_at_utc": "2026-09-04T14:46:09.687966+00:00",
+    "reference_loaded": true,
+    "reference_version": "1.0.0",
+    "training_lot_count": 17
+  },
+  "module_b_model_info": {
+    "artifact_created_at_utc": "2026-09-04T14:46:23.068123+00:00",
+    "artifact_loaded": true,
+    "artifact_version": "1.0.0",
+    "config_version": "1.0.0",
+    "context_model_count": 10,
+    "contexts": [
+      {
+        "cv_mae": 0.4762627172382156,
+        "linear_extrapolation_mae": 2.507457765666667,
+        "model": "ridge_alpha_0.1",
+        "parameter": "iddq",
+        "part_number": "PN_LOGIC_A",
+        "persistence_mae": 0.7774611864000002,
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.7871817898639305,
+        "linear_extrapolation_mae": 3.8261510939444445,
+        "model": "huber",
+        "parameter": "leakage_current",
+        "part_number": "PN_LOGIC_A",
+        "persistence_mae": 0.9740103520333335,
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.009242864660607175,
+        "linear_extrapolation_mae": 0.058177044644444356,
+        "model": "huber",
+        "parameter": "output_high_voltage",
+        "part_number": "PN_LOGIC_A",
+        "persistence_mae": 0.026810188333333342,
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.08991696021662689,
+        "linear_extrapolation_mae": 0.3830648603777777,
+        "model": "huber",
+        "parameter": "propagation_delay",
+        "part_number": "PN_LOGIC_A",
+        "persistence_mae": 0.2133886238222222,
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.006173514774894259,
+        "linear_extrapolation_mae": 0.045088489300000006,
+        "model": "ridge_alpha_1",
+        "parameter": "threshold_voltage",
+        "part_number": "PN_LOGIC_A",
+        "persistence_mae": 0.009939055388888889,
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.585602953335175,
+        "linear_extrapolation_mae": 3.6616195083444443,
+        "model": "ridge_alpha_0.01",
+        "parameter": "iddq",
+        "part_number": "PN_LOGIC_B",
+        "persistence_mae": 0.9926516575888888,
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.5802919582295256,
+        "linear_extrapolation_mae": 4.206422055611111,
+        "model": "huber",
+        "parameter": "leakage_current",
+        "part_number": "PN_LOGIC_B",
+        "persistence_mae": 0.8516971578999999,
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.008843470140638134,
+        "linear_extrapolation_mae": 0.06222479306666667,
+        "model": "huber",
+        "parameter": "output_high_voltage",
+        "part_number": "PN_LOGIC_B",
+        "persistence_mae": 0.02696462220000002,
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.059665367030376844,
+        "linear_extrapolation_mae": 0.37565796203333346,
+        "model": "huber",
+        "parameter": "propagation_delay",
+        "part_number": "PN_LOGIC_B",
+        "persistence_mae": 0.19630898307777778,
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      },
+      {
+        "cv_mae": 0.006158916839249131,
+        "linear_extrapolation_mae": 0.04478421450000001,
+        "model": "ridge_alpha_10",
+        "parameter": "threshold_voltage",
+        "part_number": "PN_LOGIC_B",
+        "persistence_mae": 0.010318084566666661,
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "training_lots": 9,
+        "training_samples": 900
+      }
+    ],
+    "input_checkpoints_h": [
+      0,
+      24
+    ],
+    "module_version": "0.1.0",
+    "parameter_fallback_model_count": 5,
+    "selected_model_counts": {
+      "huber": 6,
+      "ridge_alpha_0.01": 1,
+      "ridge_alpha_0.1": 1,
+      "ridge_alpha_1": 1,
+      "ridge_alpha_10": 1
+    },
+    "target_checkpoint_h": 168,
+    "training_lot_count": 18
+  },
+  "rule_version": "1.0.0",
+  "split_lots": {
+    "test": [
+      "LOT_006",
+      "LOT_011",
+      "LOT_016",
+      "LOT_017",
+      "LOT_018",
+      "LOT_023"
+    ],
+    "train": [
+      "LOT_003",
+      "LOT_004",
+      "LOT_005",
+      "LOT_007",
+      "LOT_010",
+      "LOT_012",
+      "LOT_013",
+      "LOT_014",
+      "LOT_019",
+      "LOT_020",
+      "LOT_021",
+      "LOT_022",
+      "LOT_024",
+      "LOT_025",
+      "LOT_026",
+      "LOT_027",
+      "LOT_029",
+      "LOT_030"
+    ],
+    "validation": [
+      "LOT_001",
+      "LOT_002",
+      "LOT_008",
+      "LOT_009",
+      "LOT_015",
+      "LOT_028"
+    ]
+  },
+  "test": {
+    "as_of_h": 24.0,
+    "component_count": 600,
+    "decision_counts": {
+      "CONTINUE_SCREENING": 528,
+      "MONITOR": 5,
+      "REJECT_EARLY": 67
+    },
+    "defect_recall": 0.9714285714285714,
+    "evidence_pattern_counts": {
+      "BOTH_MODULES_REJECT": 11,
+      "MODULE_A_ONLY_REJECT": 5,
+      "MODULE_B_ONLY_REJECT": 51,
+      "NO_HARD_REJECT": 533
+    },
+    "false_flag_rate": 0.06725663716814159,
+    "false_negative_components": [
+      "LOT_018_C0045"
+    ],
+    "false_negatives": 1,
+    "false_positives": 38,
+    "forecast_target_h": 168,
+    "hard_reject_recall": 0.9714285714285714,
+    "hard_reject_true_positives": 34,
+    "module_a_detected_defects": 12,
+    "module_b_detected_defects": 34,
+    "precision": 0.4722222222222222,
+    "recall_by_defect_type": {
+      "accelerating": {
+        "action_recall": 1.0,
+        "count": 4,
+        "detected": 4,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 4
+      },
+      "correlated": {
+        "action_recall": 1.0,
+        "count": 2,
+        "detected": 2,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 2
+      },
+      "fast_drift": {
+        "action_recall": 1.0,
+        "count": 4,
+        "detected": 4,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 4
+      },
+      "high_in_spec": {
+        "action_recall": 1.0,
+        "count": 3,
+        "detected": 3,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 3
+      },
+      "late_onset_subtle_escape": {
+        "action_recall": 0.0,
+        "count": 1,
+        "detected": 0,
+        "hard_reject_recall": 0.0,
+        "hard_rejected": 0
+      },
+      "latent_drift_flagged": {
+        "action_recall": 1.0,
+        "count": 20,
+        "detected": 20,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 20
+      },
+      "static_fail": {
+        "action_recall": 1.0,
+        "count": 1,
+        "detected": 1,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 1
+      }
+    },
+    "true_negatives": 527,
+    "true_positives": 34,
+    "weighted_error_cost": 48.0,
+    "worst_lot_recall": 0.5
+  },
+  "validation": {
+    "as_of_h": 24.0,
+    "component_count": 600,
+    "decision_counts": {
+      "CONTINUE_SCREENING": 535,
+      "MONITOR": 6,
+      "REJECT_EARLY": 59
+    },
+    "defect_recall": 1.0,
+    "evidence_pattern_counts": {
+      "BOTH_MODULES_REJECT": 8,
+      "MODULE_A_ONLY_REJECT": 2,
+      "MODULE_B_ONLY_REJECT": 49,
+      "NO_HARD_REJECT": 541
+    },
+    "false_flag_rate": 0.09322033898305085,
+    "false_negative_components": [],
+    "false_negatives": 0,
+    "false_positives": 55,
+    "forecast_target_h": 168,
+    "hard_reject_recall": 1.0,
+    "hard_reject_true_positives": 10,
+    "module_a_detected_defects": 8,
+    "module_b_detected_defects": 10,
+    "precision": 0.15384615384615385,
+    "recall_by_defect_type": {
+      "accelerating": {
+        "action_recall": 1.0,
+        "count": 3,
+        "detected": 3,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 3
+      },
+      "correlated": {
+        "action_recall": 1.0,
+        "count": 1,
+        "detected": 1,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 1
+      },
+      "fast_drift": {
+        "action_recall": 1.0,
+        "count": 1,
+        "detected": 1,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 1
+      },
+      "high_in_spec": {
+        "action_recall": 1.0,
+        "count": 3,
+        "detected": 3,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 3
+      },
+      "static_fail": {
+        "action_recall": 1.0,
+        "count": 2,
+        "detected": 2,
+        "hard_reject_recall": 1.0,
+        "hard_rejected": 2
+      }
+    },
+    "true_negatives": 535,
+    "true_positives": 10,
+    "weighted_error_cost": 55.0,
+    "worst_lot_recall": 1.0
+  }
+}

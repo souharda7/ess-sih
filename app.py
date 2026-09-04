@@ -25,6 +25,7 @@ from ess_module_a.config import load_config
 from ess_module_a.engine import ModuleAEngine
 from ess_module_b.config import load_config as load_module_b_config
 from ess_module_b.engine import ModuleBEngine
+from ess_ensemble import EnsembleEngine
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants / paths
@@ -35,9 +36,11 @@ DATA_PATH      = "data/synthetic.csv"
 MODULE_B_ARTIFACT_PATH = "artifacts/module_b_predictor.joblib"
 MODULE_B_CONFIG_PATH = "configs/module_b.yaml"
 MODULE_B_REPORT_PATH = "artifacts/module_b_acceptance_evaluation.json"
+ENSEMBLE_REPORT_PATH = "artifacts/ensemble_acceptance_evaluation.json"
 
 MODULE_A_VIEW = "Module A · Dynamic Outlier Detection"
 MODULE_B_VIEW = "Module B · 168 h Drift Predictor"
+ENSEMBLE_VIEW = "Ensemble · Final Results"
 
 STATUS_COLOR = {
     "NORMAL":          "#2ECC71",
@@ -64,6 +67,20 @@ DRIFT_PRIORITY = {
     "EARLY_REJECT": 1,
     "RETEST_REQUIRED": 2,
     "STATIC_FAIL": 3,
+}
+
+ENSEMBLE_COLOR = {
+    "CONTINUE_SCREENING": "#2ECC71",
+    "MONITOR": "#F39C12",
+    "RETEST_REQUIRED": "#95A5A6",
+    "REJECT_EARLY": "#C0392B",
+}
+
+ENSEMBLE_PRIORITY = {
+    "CONTINUE_SCREENING": 0,
+    "MONITOR": 1,
+    "RETEST_REQUIRED": 2,
+    "REJECT_EARLY": 3,
 }
 
 SPEC_DISPLAY = {
@@ -124,6 +141,15 @@ def load_module_b_report() -> dict:
         return json.load(handle)
 
 
+@st.cache_data(show_spinner="Loading ensemble acceptance evidence…")
+def load_ensemble_report() -> dict:
+    report_path = Path(ENSEMBLE_REPORT_PATH)
+    if not report_path.exists():
+        return {}
+    with report_path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
 @st.cache_data(show_spinner="Scoring selected lot (takes ~5 seconds)…")
 def score_single_lot(_engine_id: int, lot_id: str) -> dict:
     """Score a single lot lazily to prevent 5-minute startup times."""
@@ -132,6 +158,22 @@ def score_single_lot(_engine_id: int, lot_id: str) -> dict:
     lot_df = df[df["lot_id"] == lot_id].copy()
     try:
         return engine.score_lot(lot_df, as_of_h=168.0)
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@st.cache_data(show_spinner="Scoring Module A at the 24 h ensemble checkpoint…")
+def score_single_lot_at_24h(_engine_id: int, lot_id: str) -> dict:
+    """Score Module A at 24 h so both ensemble inputs share one decision time."""
+
+    engine = load_engine()
+    df = load_measurements()
+    early_df = df[
+        (df["lot_id"] == lot_id)
+        & (df["time_h"].isin([0.0, 24.0]))
+    ].copy()
+    try:
+        return engine.score_lot(early_df, as_of_h=24.0)
     except Exception as exc:
         return {"error": str(exc)}
 
@@ -684,18 +726,417 @@ def render_module_b(raw_df: pd.DataFrame) -> None:
     )
 
 
+def render_ensemble(raw_df: pd.DataFrame) -> None:
+    """Render the safety-first final decision produced by Modules A and B."""
+
+    st.markdown("## Ensemble — Combined Final Results")
+    st.caption(
+        "Combines Module A's observed dynamic-outlier evidence at 24 h with Module B's "
+        "168 h drift forecast from the same 0 h and 24 h measurements. A hard rejection "
+        "from either module cannot be diluted by the other module."
+    )
+
+    try:
+        module_a_engine = load_engine()
+        module_b_engine = load_module_b_engine()
+    except Exception as exc:
+        st.error(f"Unable to load the ensemble models: {exc}")
+        return
+
+    available_lots = sorted(str(value) for value in raw_df["lot_id"].dropna().unique())
+    st.sidebar.header("Ensemble Filters")
+    selected_lot = st.sidebar.selectbox(
+        "Lot ID",
+        available_lots,
+        key="ensemble_lot",
+    )
+
+    with st.sidebar.expander("Ensemble Configuration", expanded=False):
+        st.markdown("**Fusion rule version:** `1.0.0`")
+        st.markdown("**Decision checkpoint:** `24 h`")
+        st.markdown("**Forecast target:** `168 h`")
+        st.markdown("**Risk fusion:** `1 − (1 − Risk_A)(1 − Risk_B)`")
+        st.markdown("**Module A model**")
+        st.json(module_a_engine.model_info())
+        st.markdown("**Module B model**")
+        st.json(module_b_engine.model_info())
+
+    module_a_report = score_single_lot_at_24h(id(module_a_engine), selected_lot)
+    module_b_report = forecast_single_lot(id(module_b_engine), selected_lot)
+    if "error" in module_a_report:
+        st.error(f"Module A failed for {selected_lot}: {module_a_report['error']}")
+        return
+    if "error" in module_b_report:
+        st.error(f"Module B failed for {selected_lot}: {module_b_report['error']}")
+        return
+
+    try:
+        ensemble_report = EnsembleEngine().combine(module_a_report, module_b_report)
+    except Exception as exc:
+        st.error(f"The module reports could not be combined safely: {exc}")
+        return
+
+    final_df = pd.DataFrame(ensemble_report.get("component_results", []))
+    if final_df.empty:
+        st.warning("The ensemble returned no component results for this lot.")
+        return
+
+    summary = ensemble_report["summary"]
+    counts = final_df["final_decision"].value_counts()
+    n_reject = int(counts.get("REJECT_EARLY", 0))
+    n_retest = int(counts.get("RETEST_REQUIRED", 0))
+    n_monitor = int(counts.get("MONITOR", 0))
+    n_continue = int(counts.get("CONTINUE_SCREENING", 0))
+
+    st.markdown(f"### Final 24 h Disposition · **{selected_lot}**")
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Components", len(final_df))
+    c2.metric("Reject Early", n_reject, delta_color="inverse")
+    c3.metric("Retest Required", n_retest, delta_color="inverse")
+    c4.metric("Monitor", n_monitor, delta_color="inverse")
+    c5.metric("Continue Screening", n_continue)
+
+    if n_reject or n_retest:
+        st.error(
+            f"Final ensemble action: reject {n_reject} component(s) early and retest "
+            f"{n_retest}. Another {n_monitor} component(s) remain under enhanced monitoring."
+        )
+    elif n_monitor:
+        st.warning(
+            f"No hard rejection is present, but {n_monitor} component(s) require enhanced "
+            "monitoring before any later disposition."
+        )
+    else:
+        st.success(
+            "Both modules are clear for all components at 24 h. Continue screening; "
+            "this does not constitute final flight acceptance."
+        )
+
+    st.caption(
+        f"Observed evidence through {ensemble_report.get('as_of_h', 24):g} h · "
+        f"forecast target {ensemble_report.get('forecast_target_h', 168):g} h · "
+        f"fusion rule v{ensemble_report.get('rule_version', '1.0.0')}"
+    )
+
+    acceptance_report = load_ensemble_report()
+    held_out = acceptance_report.get("test", {})
+    if held_out:
+        with st.expander("Held-Out Ensemble Evidence", expanded=False):
+            tp = int(held_out.get("true_positives", 0))
+            fn = int(held_out.get("false_negatives", 0))
+            e1, e2, e3, e4, e5 = st.columns(5)
+            e1.metric(
+                "Final Defect Recall",
+                f"{float(held_out.get('defect_recall', 0.0)):.2%} ({tp}/{tp + fn})",
+            )
+            e2.metric("False Negatives", fn, delta_color="inverse")
+            e3.metric(
+                "Hard-Reject Recall",
+                f"{float(held_out.get('hard_reject_recall', 0.0)):.2%}",
+            )
+            e4.metric(
+                "Healthy-Part Flag Rate",
+                f"{float(held_out.get('false_flag_rate', 0.0)):.2%}",
+            )
+            e5.metric(
+                "Decision Precision",
+                f"{float(held_out.get('precision', 0.0)):.2%}",
+            )
+            st.caption(
+                "Measured on unseen whole lots after fitting both modules only on the "
+                "training partition. These synthetic acceptance results are not hardware-"
+                "qualification claims."
+            )
+
+    with st.expander("How the Final Decision Is Calculated", expanded=False):
+        st.markdown(
+            "1. `REJECT_EARLY` if Module A reports `QUARANTINE`/`STATIC_FAIL` **or** "
+            "Module B reports `EARLY_REJECT`/`STATIC_FAIL`.\n"
+            "2. Otherwise, `RETEST_REQUIRED` if either module lacks reliable evidence.\n"
+            "3. Otherwise, `MONITOR` when Module A has warning-level evidence.\n"
+            "4. `CONTINUE_SCREENING` only when neither module triggers the rules above.\n\n"
+            "The ensemble risk is a probability-union score, so it is never lower than "
+            "either input risk. Decisions themselves remain deterministic and auditable."
+        )
+
+    p1, p2, p3, p4 = st.columns(4)
+    patterns = summary.get("evidence_pattern_counts", {})
+    p1.metric("Both Modules Reject", int(patterns.get("BOTH_MODULES_REJECT", 0)))
+    p2.metric("Module A Only", int(patterns.get("MODULE_A_ONLY_REJECT", 0)))
+    p3.metric("Module B Only", int(patterns.get("MODULE_B_ONLY_REJECT", 0)))
+    p4.metric("Final Hard Rejects", int(summary.get("hard_reject_count", 0)))
+
+    st.divider()
+    st.markdown("### How Module Evidence Combines")
+    matrix_col, source_col = st.columns(2)
+    with matrix_col:
+        matrix = pd.crosstab(final_df["module_a_status"], final_df["module_b_decision"])
+        fig_matrix = px.imshow(
+            matrix,
+            text_auto=True,
+            color_continuous_scale="Blues",
+            aspect="auto",
+            title="Module A Status × Module B Decision",
+            labels={
+                "x": "Module B Decision",
+                "y": "Module A Status",
+                "color": "Components",
+            },
+        )
+        st.plotly_chart(fig_matrix, use_container_width=True)
+
+    with source_col:
+        source_counts = final_df["evidence_pattern"].value_counts().reset_index()
+        source_counts.columns = ["Evidence Pattern", "Components"]
+        fig_sources = px.bar(
+            source_counts,
+            x="Evidence Pattern",
+            y="Components",
+            color="Evidence Pattern",
+            title="Source of Hard-Rejection Evidence",
+        )
+        fig_sources.update_layout(showlegend=False, xaxis_tickangle=-20)
+        st.plotly_chart(fig_sources, use_container_width=True)
+
+    decision_col, risk_col = st.columns(2)
+    with decision_col:
+        decision_counts = final_df["final_decision"].value_counts().reset_index()
+        decision_counts.columns = ["Final Decision", "Components"]
+        fig_final = px.pie(
+            decision_counts,
+            names="Final Decision",
+            values="Components",
+            color="Final Decision",
+            color_discrete_map=ENSEMBLE_COLOR,
+            title="Final Ensemble Disposition",
+            hole=0.42,
+        )
+        fig_final.update_traces(textinfo="percent+label")
+        st.plotly_chart(fig_final, use_container_width=True)
+
+    with risk_col:
+        fig_risk = px.scatter(
+            final_df,
+            x="module_a_risk_score",
+            y="module_b_risk_score",
+            color="final_decision",
+            size="ensemble_risk_score",
+            color_discrete_map=ENSEMBLE_COLOR,
+            hover_name="component_id",
+            hover_data={
+                "module_a_status": True,
+                "module_b_decision": True,
+                "ensemble_risk_score": ":.3f",
+                "evidence_pattern": True,
+            },
+            title="Independent Module Risks",
+            labels={
+                "module_a_risk_score": "Module A Observed Risk",
+                "module_b_risk_score": "Module B Forecast Risk",
+                "final_decision": "Final Decision",
+            },
+        )
+        fig_risk.update_xaxes(range=[0, 1.02])
+        fig_risk.update_yaxes(range=[0, 1.02])
+        st.plotly_chart(fig_risk, use_container_width=True)
+        st.caption(
+            "Marker size is the fused risk. Final decisions use the explicit status rule, "
+            "not a hidden risk threshold."
+        )
+
+    st.divider()
+    st.markdown("### Final Component Results")
+    final_df["decision_priority"] = final_df["final_decision"].map(ENSEMBLE_PRIORITY)
+    sorted_final = final_df.sort_values(
+        ["decision_priority", "ensemble_risk_score"],
+        ascending=[False, False],
+    ).drop(columns="decision_priority")
+    final_columns = [
+        "component_id",
+        "final_decision",
+        "ensemble_risk_score",
+        "evidence_pattern",
+        "module_a_status",
+        "module_a_risk_score",
+        "module_a_highest_risk_parameter",
+        "module_b_decision",
+        "module_b_risk_score",
+        "module_b_highest_risk_parameter",
+        "module_b_predicted_value_168h",
+        "reason_codes",
+    ]
+    st.dataframe(
+        sorted_final[final_columns],
+        use_container_width=True,
+        hide_index=True,
+        height=430,
+    )
+    st.download_button(
+        "Download Final Ensemble Results",
+        sorted_final.to_csv(index=False),
+        file_name=f"{selected_lot}_ensemble_final_results.csv",
+        mime="text/csv",
+    )
+
+    st.divider()
+    st.markdown("### Final-Decision Audit")
+    action_ids = sorted_final.loc[
+        sorted_final["final_decision"].isin(["REJECT_EARLY", "RETEST_REQUIRED"]),
+        "component_id",
+    ].tolist()
+    audit_scope = st.radio(
+        "Audit scope",
+        ["QA action first", "All components"],
+        horizontal=True,
+        key="ensemble_audit_scope",
+    )
+    audit_pool = action_ids if audit_scope == "QA action first" else sorted_final["component_id"].tolist()
+    if not audit_pool:
+        st.success("No component requires rejection or retest in this lot.")
+        audit_pool = sorted_final["component_id"].tolist()
+
+    selected_component = st.selectbox(
+        "Component ID",
+        audit_pool,
+        key="ensemble_component",
+    )
+    selected = final_df[final_df["component_id"] == selected_component].iloc[0]
+    final_decision = str(selected["final_decision"])
+    badge_color = ENSEMBLE_COLOR.get(final_decision, "#777777")
+    st.markdown(
+        f"**Component `{selected_component}`** — "
+        f"<span style='background:{badge_color};color:white;padding:3px 10px;"
+        f"border-radius:4px;font-weight:bold'>{final_decision}</span>",
+        unsafe_allow_html=True,
+    )
+
+    d1, d2, d3, d4, d5 = st.columns(5)
+    d1.metric("Final Risk", f"{float(selected['ensemble_risk_score']):.1%}")
+    d2.metric("Module A", str(selected["module_a_status"]))
+    d3.metric("Module A Risk", f"{float(selected['module_a_risk_score']):.1%}")
+    d4.metric("Module B", str(selected["module_b_decision"]))
+    d5.metric("Module B Risk", f"{float(selected['module_b_risk_score']):.1%}")
+    st.info(str(selected["explanation"]))
+
+    reason_a, reason_b = st.columns(2)
+    with reason_a:
+        st.markdown("#### Module A Evidence")
+        st.markdown(
+            f"Highest-risk parameter: `{selected['module_a_highest_risk_parameter']}`"
+        )
+        module_a_reasons = selected["module_a_reason_codes"] or []
+        st.markdown(
+            "  ".join(f"`{code}`" for code in module_a_reasons)
+            if module_a_reasons
+            else "`NO_MODULE_A_REASON_CODE`"
+        )
+    with reason_b:
+        st.markdown("#### Module B Evidence")
+        st.markdown(
+            f"Highest-risk parameter: `{selected['module_b_highest_risk_parameter']}`"
+        )
+        module_b_reasons = selected["module_b_reason_codes"] or []
+        st.markdown(
+            "  ".join(f"`{code}`" for code in module_b_reasons)
+            if module_b_reasons
+            else "`NO_MODULE_B_REASON_CODE`"
+        )
+
+    module_a_parameters = pd.DataFrame(module_a_report.get("parameter_results", []))
+    module_b_parameters = pd.DataFrame(module_b_report.get("prediction_results", []))
+    a_component = module_a_parameters[
+        module_a_parameters["component_id"] == selected_component
+    ].copy()
+    if not a_component.empty:
+        latest_checkpoint = a_component["time_h"].max()
+        a_component = a_component[a_component["time_h"] == latest_checkpoint]
+    b_component = module_b_parameters[
+        module_b_parameters["component_id"] == selected_component
+    ].copy()
+
+    a_columns = ["parameter", "normalized_value", "status", "risk_score", "reason_codes"]
+    b_columns = [
+        "parameter",
+        "value_0h",
+        "value_24h",
+        "predicted_value_168h",
+        "danger_directed_drift_rate_per_h",
+        "safety_slope_per_h",
+        "decision",
+        "risk_score",
+        "reason_codes",
+    ]
+    parameter_evidence = a_component[a_columns].rename(
+        columns={
+            "normalized_value": "module_a_value_24h",
+            "status": "module_a_status",
+            "risk_score": "module_a_risk",
+            "reason_codes": "module_a_reasons",
+        }
+    ).merge(
+        b_component[b_columns].rename(
+            columns={
+                "decision": "module_b_decision",
+                "risk_score": "module_b_risk",
+                "reason_codes": "module_b_reasons",
+            }
+        ),
+        on="parameter",
+        how="outer",
+    )
+    st.markdown("#### Parameter-Level Combined Evidence")
+    st.dataframe(parameter_evidence, use_container_width=True, hide_index=True)
+
+    risk_columns = ["parameter", "module_a_risk", "module_b_risk"]
+    risk_by_parameter = parameter_evidence[risk_columns].melt(
+        id_vars="parameter",
+        var_name="Module",
+        value_name="Risk",
+    )
+    fig_parameter_risk = px.bar(
+        risk_by_parameter,
+        x="parameter",
+        y="Risk",
+        color="Module",
+        barmode="group",
+        title="Observed vs. Forecast Risk by Parameter",
+        labels={"parameter": "Parameter", "Risk": "Risk Score (0–1)"},
+    )
+    fig_parameter_risk.update_yaxes(range=[0, 1.02])
+    st.plotly_chart(fig_parameter_risk, use_container_width=True)
+
+    all_validation_issues = [
+        *ensemble_report.get("module_a_validation_issues", []),
+        *ensemble_report.get("module_b_validation_issues", []),
+    ]
+    if all_validation_issues:
+        with st.expander(
+            f"Combined Input Validation Issues ({len(all_validation_issues)})",
+            expanded=False,
+        ):
+            st.dataframe(pd.DataFrame(all_validation_issues), use_container_width=True)
+
+    st.caption(
+        "Ensemble · Module A observed evidence + Module B forecast evidence · "
+        "safety-first deterministic fusion with full reason-code provenance."
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Module navigation
 # ─────────────────────────────────────────────────────────────────────────────
 raw_df = load_measurements()
 selected_module = st.sidebar.radio(
     "Screening Module",
-    [MODULE_A_VIEW, MODULE_B_VIEW],
+    [MODULE_A_VIEW, MODULE_B_VIEW, ENSEMBLE_VIEW],
     key="screening_module",
 )
 
 if selected_module == MODULE_B_VIEW:
     render_module_b(raw_df)
+    st.stop()
+if selected_module == ENSEMBLE_VIEW:
+    render_ensemble(raw_df)
     st.stop()
 
 

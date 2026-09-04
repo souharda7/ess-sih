@@ -1,5 +1,9 @@
 README.md
 pyproject.toml
+src/ess_ensemble/__init__.py
+src/ess_ensemble/cli.py
+src/ess_ensemble/engine.py
+src/ess_ensemble/evaluation.py
 src/ess_module_a/__init__.py
 src/ess_module_a/adapters.py
 src/ess_module_a/api.py
@@ -34,6 +38,7 @@ src/ess_module_b/training.py
 tests/test_adapters.py
 tests/test_api.py
 tests/test_engine.py
+tests/test_ensemble_engine.py
 tests/test_evaluation.py
 tests/test_module_b_api.py
 tests/test_module_b_data.py

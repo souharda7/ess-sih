@@ -1,2 +1,3 @@
+ess_ensemble
 ess_module_a
 ess_module_b
