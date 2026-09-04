@@ -64,10 +64,10 @@ SPEC_LIMITS: dict[str, tuple] = {
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Space-Grade ESS QA Dashboard",
-    page_icon="🛰️",
+    
     layout="wide",
 )
-st.title("🛰️ Electronic Stress Screening (ESS) — QA Inspector")
+st.title("Electronic Stress Screening (ESS) — QA Inspector")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ def lot_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, list[dict]]
 # ─────────────────────────────────────────────────────────────────────────────
 # Sidebar
 # ─────────────────────────────────────────────────────────────────────────────
-st.sidebar.header("🔭 Filters")
+st.sidebar.header("Filters")
 available_lots = sorted(raw_df["lot_id"].unique())
 selected_lot   = st.sidebar.selectbox("Lot ID", available_lots)
 
@@ -135,7 +135,7 @@ available_params = sorted(param_df["parameter"].unique()) if not param_df.empty 
 selected_param   = st.sidebar.selectbox("Parameter", available_params)
 
 # Model info in sidebar
-with st.sidebar.expander("🤖 Model Info", expanded=False):
+with st.sidebar.expander("Model Configuration", expanded=False):
     info = engine.model_info()
     st.json(info)
 
@@ -153,22 +153,22 @@ n_retest      = (comp_df["status"] == "RETEST_REQUIRED").sum()
 n_flagged     = n_static_fail + n_quarantine   # anything needing action
 
 c1, c2, c3, c4, c5, c6 = st.columns(6)
-c1.metric("📦 Total",        total)
-c2.metric("🟢 Normal",       n_normal)
-c3.metric("🟡 Monitor",      n_monitor,     delta_color="inverse")
-c4.metric("🔴 Quarantine",   n_quarantine,  delta_color="inverse")
-c5.metric("🟣 Static Fail",  n_static_fail, delta_color="inverse")
-c6.metric("⚪ Retest",       n_retest,      delta_color="inverse")
+c1.metric("Total Components",        total)
+c2.metric("Normal",       n_normal)
+c3.metric("Monitor",      n_monitor,     delta_color="inverse")
+c4.metric("Quarantine",   n_quarantine,  delta_color="inverse")
+c5.metric("Static Fail",  n_static_fail, delta_color="inverse")
+c6.metric("Retest Required",       n_retest,      delta_color="inverse")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ② Lot-level alerts banner
 # ─────────────────────────────────────────────────────────────────────────────
 if lot_alerts:
     st.divider()
-    st.markdown("### ⚠️ Lot-Level Alerts")
+    st.markdown("### Lot-Level Alerts")
     for alert in lot_alerts:
         severity = alert.get("severity", "WARNING")
-        icon     = "🚨" if severity == "SEVERE" else "⚠️"
+        icon = ""
         msg_parts = [
             f"**{alert['type']}**",
             f"param=`{alert.get('parameter','?')}`",
@@ -181,16 +181,16 @@ if lot_alerts:
             msg_parts.append(f"chamber=`{alert['chamber_id']}`")
         msg_parts.append(f"severity=**{severity}**")
         if severity == "SEVERE":
-            st.error(f"{icon}  " + "  ·  ".join(msg_parts))
+            st.error("  ·  ".join(msg_parts))
         else:
-            st.warning(f"{icon}  " + "  ·  ".join(msg_parts))
+            st.warning("  ·  ".join(msg_parts))
 
 st.divider()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ③ Component status pie + risk score distribution
 # ─────────────────────────────────────────────────────────────────────────────
-st.markdown("### 🗂️ Component Status Overview")
+st.markdown("### Component Status Overview")
 col_pie, col_risk = st.columns(2)
 
 with col_pie:
@@ -226,7 +226,7 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 # ④ 24-h scatter for selected parameter  (with spec lines)
 # ─────────────────────────────────────────────────────────────────────────────
-st.markdown(f"### 📈 Parameter Distribution — **{selected_param}** at 24 h")
+st.markdown(f"### Parameter Distribution — **{selected_param}** at 24 h")
 
 p24 = param_df[(param_df["parameter"] == selected_param) & (param_df["time_h"] == 24.0)].copy()
 
@@ -273,7 +273,7 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 # ⑤ Drift trajectory  (time-series) for selected parameter
 # ─────────────────────────────────────────────────────────────────────────────
-st.markdown(f"### 📉 Drift Trajectories — **{selected_param}** across all checkpoints")
+st.markdown(f"### Drift Trajectories — **{selected_param}** across all checkpoints")
 
 param_ts = param_df[param_df["parameter"] == selected_param].copy()
 SAMPLE_LIMIT = 40
@@ -339,7 +339,7 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 # ⑥ Multivariate scores heatmap (Isolation Forest + Mahalanobis)
 # ─────────────────────────────────────────────────────────────────────────────
-st.markdown("### 🤖 Multivariate Anomaly Scores (All Parameters Together)")
+st.markdown("### Multivariate Anomaly Scores (All Parameters Together)")
 
 mv_cols  = ["component_id", "parameter", "time_h",
             "isolation_percentile", "mahalanobis_percentile",
@@ -404,7 +404,7 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 # Robust Z-score heatmap (lot-relative) across all parameters
 # ─────────────────────────────────────────────────────────────────────────────
-st.markdown("### 📊 Robust Z-Score Heatmap (Lot-Relative) @ 24 h")
+st.markdown("### Robust Z-Score Heatmap (Lot-Relative) @ 24 h")
 
 z_pivot = (
     param_df[param_df["time_h"] == 24.0]
@@ -431,7 +431,7 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 # ⑧ Component Deep-Dive (audit panel)
 # ─────────────────────────────────────────────────────────────────────────────
-st.markdown("### 🔍 Component Deep-Dive Audit")
+st.markdown("### Component Deep-Dive Audit")
 
 flagged_comp_df = comp_df[comp_df["status"].isin(["QUARANTINE","STATIC_FAIL","MONITOR"])].copy()
 all_comp_ids_sorted = sorted(comp_df["component_id"].unique())
@@ -445,7 +445,7 @@ audit_mode = st.radio(
 audit_pool = flagged_ids_sorted if "Flagged" in audit_mode else all_comp_ids_sorted
 
 if not audit_pool:
-    st.success("✅ No flagged components in this lot.")
+    st.success("No flagged components in this lot.")
 else:
     selected_comp = st.selectbox("Select Component ID", audit_pool)
 
@@ -577,7 +577,7 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 # ⑨ Full component summary table
 # ─────────────────────────────────────────────────────────────────────────────
-st.markdown("### 📋 Full Component Summary Table")
+st.markdown("### Full Component Summary Table")
 
 summary_cols = [
     "component_id", "status", "risk_score",
@@ -603,7 +603,7 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 # ⑩ Cross-lot comparison  (risk score trends across all lots)
 # ─────────────────────────────────────────────────────────────────────────────
-st.markdown("### 🌐 Cross-Lot Comparison — Risk Score Trends")
+st.markdown("### Cross-Lot Comparison — Risk Score Trends")
 
 if st.button("Compute Cross-Lot Trend (Warning: Takes ~2-3 minutes to score all lots)"):
     with st.spinner("Scoring all lots in the background..."):
