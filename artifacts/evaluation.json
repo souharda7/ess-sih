@@ -1,0 +1,140 @@
+{
+  "split_lots": {
+    "train": [
+      "LOT_003",
+      "LOT_004",
+      "LOT_005",
+      "LOT_007",
+      "LOT_010",
+      "LOT_012",
+      "LOT_013",
+      "LOT_014",
+      "LOT_019",
+      "LOT_020",
+      "LOT_021",
+      "LOT_022",
+      "LOT_024",
+      "LOT_025",
+      "LOT_026",
+      "LOT_027",
+      "LOT_029",
+      "LOT_030"
+    ],
+    "validation": [
+      "LOT_001",
+      "LOT_002",
+      "LOT_008",
+      "LOT_009",
+      "LOT_015",
+      "LOT_028"
+    ],
+    "test": [
+      "LOT_006",
+      "LOT_011",
+      "LOT_016",
+      "LOT_017",
+      "LOT_018",
+      "LOT_023"
+    ]
+  },
+  "model_info": {
+    "module_version": "0.1.0",
+    "config_version": "1.0.0",
+    "reference_loaded": true,
+    "reference_version": "1.0.0",
+    "reference_created_at_utc": "2026-09-03T18:21:15.484708+00:00",
+    "training_lot_count": 17,
+    "isolation_forest_enabled": true,
+    "mahalanobis_context_count": 8
+  },
+  "validation": {
+    "as_of_h": 168.0,
+    "component_count": 600,
+    "true_positives": 12,
+    "false_negatives": 0,
+    "false_positives": 20,
+    "true_negatives": 568,
+    "defect_recall": 1.0,
+    "false_flag_rate": 0.034013605442176874,
+    "precision_recall_auc": 0.8571428571428571,
+    "worst_lot_recall": 1.0,
+    "recall_by_defect_type": {
+      "high_in_spec": {
+        "count": 3,
+        "detected": 3,
+        "recall": 1.0
+      },
+      "fast_drift": {
+        "count": 2,
+        "detected": 2,
+        "recall": 1.0
+      },
+      "accelerating": {
+        "count": 2,
+        "detected": 2,
+        "recall": 1.0
+      },
+      "correlated": {
+        "count": 2,
+        "detected": 2,
+        "recall": 1.0
+      },
+      "static_fail": {
+        "count": 3,
+        "detected": 3,
+        "recall": 1.0
+      }
+    },
+    "status_counts": {
+      "NORMAL": 568,
+      "MONITOR": 16,
+      "QUARANTINE": 9,
+      "STATIC_FAIL": 7
+    }
+  },
+  "test": {
+    "as_of_h": 168.0,
+    "component_count": 600,
+    "true_positives": 12,
+    "false_negatives": 0,
+    "false_positives": 12,
+    "true_negatives": 576,
+    "defect_recall": 1.0,
+    "false_flag_rate": 0.02040816326530612,
+    "precision_recall_auc": 1.0,
+    "worst_lot_recall": 1.0,
+    "recall_by_defect_type": {
+      "high_in_spec": {
+        "count": 5,
+        "detected": 5,
+        "recall": 1.0
+      },
+      "fast_drift": {
+        "count": 3,
+        "detected": 3,
+        "recall": 1.0
+      },
+      "accelerating": {
+        "count": 1,
+        "detected": 1,
+        "recall": 1.0
+      },
+      "correlated": {
+        "count": 1,
+        "detected": 1,
+        "recall": 1.0
+      },
+      "static_fail": {
+        "count": 2,
+        "detected": 2,
+        "recall": 1.0
+      }
+    },
+    "status_counts": {
+      "NORMAL": 576,
+      "QUARANTINE": 11,
+      "MONITOR": 7,
+      "STATIC_FAIL": 6
+    }
+  }
+}

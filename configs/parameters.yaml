@@ -1,0 +1,54 @@
+version: "1.0.0"
+reference_version: "1.0.0"
+checkpoints_h: [0, 24, 96, 168]
+robust_z_warning: 2.5
+robust_z_severe: 3.5
+robust_z_extreme: 5.0
+iqr_warning_multiplier: 1.5
+iqr_severe_multiplier: 3.0
+tail_warning_percentile: 97.5
+tail_severe_percentile: 99.5
+epsilon: 1.0e-9
+random_seed: 170
+parameters:
+  leakage_current:
+    canonical_unit: uA
+    danger_direction: higher
+    spec_max: 50.0
+    transform: log1p
+    minimum_lot_peers: 10
+    minimum_historical_peers: 30
+    required_context_fields: [temperature_c, voltage_v, test_mode]
+  iddq:
+    canonical_unit: uA
+    danger_direction: higher
+    spec_max: 80.0
+    transform: log1p
+    minimum_lot_peers: 10
+    minimum_historical_peers: 30
+    required_context_fields: [temperature_c, voltage_v, test_mode]
+  propagation_delay:
+    canonical_unit: ns
+    danger_direction: higher
+    spec_max: 20.0
+    transform: raw
+    minimum_lot_peers: 10
+    minimum_historical_peers: 30
+    required_context_fields: [temperature_c, voltage_v, test_mode]
+  output_high_voltage:
+    canonical_unit: V
+    danger_direction: lower
+    spec_min: 2.4
+    transform: raw
+    minimum_lot_peers: 10
+    minimum_historical_peers: 30
+    required_context_fields: [temperature_c, voltage_v, test_mode]
+  threshold_voltage:
+    canonical_unit: V
+    danger_direction: two_sided
+    spec_min: 0.35
+    spec_max: 0.95
+    transform: raw
+    minimum_lot_peers: 10
+    minimum_historical_peers: 30
+    required_context_fields: [temperature_c, voltage_v, test_mode]

@@ -1,0 +1,2 @@
+[console_scripts]
+ess-module-a = ess_module_a.cli:main
