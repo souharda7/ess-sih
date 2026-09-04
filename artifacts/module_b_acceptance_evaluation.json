@@ -1,0 +1,420 @@
+{
+  "split_lots": {
+    "train": [
+      "LOT_003",
+      "LOT_004",
+      "LOT_005",
+      "LOT_007",
+      "LOT_010",
+      "LOT_012",
+      "LOT_013",
+      "LOT_014",
+      "LOT_019",
+      "LOT_020",
+      "LOT_021",
+      "LOT_022",
+      "LOT_024",
+      "LOT_025",
+      "LOT_026",
+      "LOT_027",
+      "LOT_029",
+      "LOT_030"
+    ],
+    "validation": [
+      "LOT_001",
+      "LOT_002",
+      "LOT_008",
+      "LOT_009",
+      "LOT_015",
+      "LOT_028"
+    ],
+    "test": [
+      "LOT_006",
+      "LOT_011",
+      "LOT_016",
+      "LOT_017",
+      "LOT_018",
+      "LOT_023"
+    ]
+  },
+  "model_info": {
+    "module_version": "0.1.0",
+    "config_version": "1.0.0",
+    "artifact_loaded": true,
+    "artifact_version": "1.0.0",
+    "artifact_created_at_utc": "2026-09-04T13:04:02.820504+00:00",
+    "training_lot_count": 18,
+    "context_model_count": 10,
+    "parameter_fallback_model_count": 5,
+    "selected_model_counts": {
+      "ridge_alpha_0.1": 1,
+      "huber": 6,
+      "ridge_alpha_1": 1,
+      "ridge_alpha_0.01": 1,
+      "ridge_alpha_10": 1
+    },
+    "input_checkpoints_h": [
+      0,
+      24
+    ],
+    "target_checkpoint_h": 168,
+    "contexts": [
+      {
+        "part_number": "PN_LOGIC_A",
+        "parameter": "iddq",
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "model": "ridge_alpha_0.1",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.4762627172382156,
+        "persistence_mae": 0.7774611864000002,
+        "linear_extrapolation_mae": 2.507457765666667
+      },
+      {
+        "part_number": "PN_LOGIC_A",
+        "parameter": "leakage_current",
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "model": "huber",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.7871817898639305,
+        "persistence_mae": 0.9740103520333335,
+        "linear_extrapolation_mae": 3.8261510939444445
+      },
+      {
+        "part_number": "PN_LOGIC_A",
+        "parameter": "output_high_voltage",
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "model": "huber",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.009242864660607175,
+        "persistence_mae": 0.026810188333333342,
+        "linear_extrapolation_mae": 0.058177044644444356
+      },
+      {
+        "part_number": "PN_LOGIC_A",
+        "parameter": "propagation_delay",
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "model": "huber",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.08991696021662689,
+        "persistence_mae": 0.2133886238222222,
+        "linear_extrapolation_mae": 0.3830648603777777
+      },
+      {
+        "part_number": "PN_LOGIC_A",
+        "parameter": "threshold_voltage",
+        "test_condition_id": "PN_LOGIC_A_125C_NOMINAL",
+        "model": "ridge_alpha_1",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.006173514774894259,
+        "persistence_mae": 0.009939055388888889,
+        "linear_extrapolation_mae": 0.045088489300000006
+      },
+      {
+        "part_number": "PN_LOGIC_B",
+        "parameter": "iddq",
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "model": "ridge_alpha_0.01",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.585602953335175,
+        "persistence_mae": 0.9926516575888888,
+        "linear_extrapolation_mae": 3.6616195083444443
+      },
+      {
+        "part_number": "PN_LOGIC_B",
+        "parameter": "leakage_current",
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "model": "huber",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.5802919582295256,
+        "persistence_mae": 0.8516971578999999,
+        "linear_extrapolation_mae": 4.206422055611111
+      },
+      {
+        "part_number": "PN_LOGIC_B",
+        "parameter": "output_high_voltage",
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "model": "huber",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.008843470140638134,
+        "persistence_mae": 0.02696462220000002,
+        "linear_extrapolation_mae": 0.06222479306666667
+      },
+      {
+        "part_number": "PN_LOGIC_B",
+        "parameter": "propagation_delay",
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "model": "huber",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.059665367030376844,
+        "persistence_mae": 0.19630898307777778,
+        "linear_extrapolation_mae": 0.37565796203333346
+      },
+      {
+        "part_number": "PN_LOGIC_B",
+        "parameter": "threshold_voltage",
+        "test_condition_id": "PN_LOGIC_B_125C_NOMINAL",
+        "model": "ridge_alpha_10",
+        "training_samples": 900,
+        "training_lots": 9,
+        "cv_mae": 0.006158916839249131,
+        "persistence_mae": 0.010318084566666661,
+        "linear_extrapolation_mae": 0.04478421450000001
+      }
+    ]
+  },
+  "validation": {
+    "target_h": 168,
+    "regression": {
+      "count": 3000,
+      "mae": 0.22848669928531845,
+      "median_absolute_error": 0.03633253864182695,
+      "rmse": 1.6330730780758265,
+      "r2": 0.9723674267267184,
+      "p95_absolute_error": 0.7700795744981069,
+      "persistence_mae": 0.35540453117666665,
+      "linear_extrapolation_mae": 1.413380394103333,
+      "improvement_over_persistence_percent": 35.71080860200376,
+      "improvement_over_linear_percent": 83.83402654808485
+    },
+    "regression_by_parameter": {
+      "iddq": {
+        "count": 600,
+        "mae": 0.5170285795589615,
+        "median_absolute_error": 0.39027298895081053,
+        "rmse": 0.7487334044188168,
+        "r2": 0.9801048143181367,
+        "p95_absolute_error": 1.323143051224637,
+        "persistence_mae": 0.7795043589999998,
+        "linear_extrapolation_mae": 2.8850477341333334,
+        "improvement_over_persistence_percent": 33.67213748204817,
+        "improvement_over_linear_percent": 82.07902859138389
+      },
+      "leakage_current": {
+        "count": 600,
+        "mae": 0.5292902315791113,
+        "median_absolute_error": 0.17834188800290107,
+        "rmse": 3.562907157960646,
+        "r2": 0.6320278783514727,
+        "p95_absolute_error": 0.565262945705327,
+        "persistence_mae": 0.7600846704333334,
+        "linear_extrapolation_mae": 3.6879401434666663,
+        "improvement_over_persistence_percent": 30.364306482150656,
+        "improvement_over_linear_percent": 85.64807965994866
+      },
+      "output_high_voltage": {
+        "count": 600,
+        "mae": 0.008625358209155219,
+        "median_absolute_error": 0.0067172692441412885,
+        "rmse": 0.016105898711815732,
+        "r2": 0.9996248367200636,
+        "p95_absolute_error": 0.020505962880690124,
+        "persistence_mae": 0.025210030550000005,
+        "linear_extrapolation_mae": 0.05969333481666664,
+        "improvement_over_persistence_percent": 65.7860065181269,
+        "improvement_over_linear_percent": 85.55055060058903
+      },
+      "propagation_delay": {
+        "count": 600,
+        "mae": 0.08151152519418578,
+        "median_absolute_error": 0.05430409141013337,
+        "rmse": 0.28179945481967333,
+        "r2": 0.9505027241489573,
+        "p95_absolute_error": 0.1544886394689552,
+        "persistence_mae": 0.20235597028333335,
+        "linear_extrapolation_mae": 0.39226158468333333,
+        "improvement_over_persistence_percent": 59.71874460632145,
+        "improvement_over_linear_percent": 79.22011015685139
+      },
+      "threshold_voltage": {
+        "count": 600,
+        "mae": 0.005977801885178377,
+        "median_absolute_error": 0.004983324237305242,
+        "rmse": 0.007676707008412061,
+        "r2": 0.9790900626780995,
+        "p95_absolute_error": 0.015961271442816276,
+        "persistence_mae": 0.009867625616666667,
+        "linear_extrapolation_mae": 0.041959173416666655,
+        "improvement_over_persistence_percent": 39.420057900436355,
+        "improvement_over_linear_percent": 85.75328968991575
+      }
+    },
+    "screening": {
+      "component_count": 600,
+      "true_positives": 10,
+      "false_negatives": 0,
+      "false_positives": 47,
+      "true_negatives": 543,
+      "defect_recall": 1.0,
+      "precision": 0.17543859649122806,
+      "false_flag_rate": 0.07966101694915254,
+      "false_negative_cost_multiplier": 10.0,
+      "weighted_error_cost": 47.0,
+      "worst_lot_recall": 1.0,
+      "recall_by_defect_type": {
+        "accelerating": {
+          "count": 3,
+          "detected": 3,
+          "recall": 1.0
+        },
+        "correlated": {
+          "count": 1,
+          "detected": 1,
+          "recall": 1.0
+        },
+        "fast_drift": {
+          "count": 1,
+          "detected": 1,
+          "recall": 1.0
+        },
+        "high_in_spec": {
+          "count": 3,
+          "detected": 3,
+          "recall": 1.0
+        },
+        "static_fail": {
+          "count": 2,
+          "detected": 2,
+          "recall": 1.0
+        }
+      },
+      "false_negative_components": [],
+      "decision_counts": {
+        "CONTINUE_SCREENING": 543,
+        "EARLY_REJECT": 55,
+        "STATIC_FAIL": 2
+      }
+    }
+  },
+  "test": {
+    "target_h": 168,
+    "regression": {
+      "count": 3000,
+      "mae": 0.2926599172440129,
+      "median_absolute_error": 0.03206567470406263,
+      "rmse": 2.241919627880442,
+      "r2": 0.953573218133705,
+      "p95_absolute_error": 0.750153888148355,
+      "persistence_mae": 0.43694941111666663,
+      "linear_extrapolation_mae": 1.3424371508166668,
+      "improvement_over_persistence_percent": 33.022013579079534,
+      "improvement_over_linear_percent": 78.19935800599869
+    },
+    "regression_by_parameter": {
+      "iddq": {
+        "count": 600,
+        "mae": 0.518276259156859,
+        "median_absolute_error": 0.3655952236563458,
+        "rmse": 0.8606062654567582,
+        "r2": 0.970721786253345,
+        "p95_absolute_error": 1.3445311834165872,
+        "persistence_mae": 0.86429042665,
+        "linear_extrapolation_mae": 2.9035648964500003,
+        "improvement_over_persistence_percent": 40.03447878444009,
+        "improvement_over_linear_percent": 82.15034698241043
+      },
+      "leakage_current": {
+        "count": 600,
+        "mae": 0.8407367428840494,
+        "median_absolute_error": 0.19609749016564315,
+        "rmse": 4.926064027316769,
+        "r2": 0.4177010970742927,
+        "p95_absolute_error": 0.6068721319953306,
+        "persistence_mae": 1.0754813534833332,
+        "linear_extrapolation_mae": 3.307653392716667,
+        "improvement_over_persistence_percent": 21.826934501372705,
+        "improvement_over_linear_percent": 74.58207849905551
+      },
+      "output_high_voltage": {
+        "count": 600,
+        "mae": 0.008448670238624775,
+        "median_absolute_error": 0.006162864958970893,
+        "rmse": 0.020041124123909036,
+        "r2": 0.9994204892062593,
+        "p95_absolute_error": 0.018996477663177334,
+        "persistence_mae": 0.026293889533333344,
+        "linear_extrapolation_mae": 0.06068455750000004,
+        "improvement_over_persistence_percent": 67.868313176283,
+        "improvement_over_linear_percent": 86.0777262178689
+      },
+      "propagation_delay": {
+        "count": 600,
+        "mae": 0.08992579365949709,
+        "median_absolute_error": 0.04480329367221758,
+        "rmse": 0.351868673503741,
+        "r2": 0.9118725669611676,
+        "p95_absolute_error": 0.1546516089490302,
+        "persistence_mae": 0.20855964093333337,
+        "linear_extrapolation_mae": 0.3959318150999999,
+        "improvement_over_persistence_percent": 56.88245661669407,
+        "improvement_over_linear_percent": 77.28755552599766
+      },
+      "threshold_voltage": {
+        "count": 600,
+        "mae": 0.005912120281034012,
+        "median_absolute_error": 0.004965279159982572,
+        "rmse": 0.007411744783285665,
+        "r2": 0.9802297592970225,
+        "p95_absolute_error": 0.014586757053722588,
+        "persistence_mae": 0.010121744983333333,
+        "linear_extrapolation_mae": 0.044351092316666674,
+        "improvement_over_persistence_percent": 41.589910724197985,
+        "improvement_over_linear_percent": 86.66973016397998
+      }
+    },
+    "screening": {
+      "component_count": 600,
+      "true_positives": 14,
+      "false_negatives": 0,
+      "false_positives": 48,
+      "true_negatives": 538,
+      "defect_recall": 1.0,
+      "precision": 0.22580645161290322,
+      "false_flag_rate": 0.08191126279863481,
+      "false_negative_cost_multiplier": 10.0,
+      "weighted_error_cost": 48.0,
+      "worst_lot_recall": 1.0,
+      "recall_by_defect_type": {
+        "accelerating": {
+          "count": 4,
+          "detected": 4,
+          "recall": 1.0
+        },
+        "correlated": {
+          "count": 2,
+          "detected": 2,
+          "recall": 1.0
+        },
+        "fast_drift": {
+          "count": 4,
+          "detected": 4,
+          "recall": 1.0
+        },
+        "high_in_spec": {
+          "count": 3,
+          "detected": 3,
+          "recall": 1.0
+        },
+        "static_fail": {
+          "count": 1,
+          "detected": 1,
+          "recall": 1.0
+        }
+      },
+      "false_negative_components": [],
+      "decision_counts": {
+        "CONTINUE_SCREENING": 538,
+        "EARLY_REJECT": 61,
+        "STATIC_FAIL": 1
+      }
+    }
+  }
+}

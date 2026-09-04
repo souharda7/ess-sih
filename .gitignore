@@ -5,6 +5,6 @@ __pycache__/
 .coverage
 htmlcov/
 artifacts/*.joblib
+!artifacts/module_b_predictor.joblib
 data/*.csv
 !data/.gitkeep
-

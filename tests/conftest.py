@@ -6,6 +6,8 @@ import pytest
 from ess_module_a.config import default_config
 from ess_module_a.engine import ModuleAEngine
 from ess_module_a.synthetic import generate_synthetic_data
+from ess_module_b.config import default_config as module_b_default_config
+from ess_module_b.engine import ModuleBEngine
 
 
 @pytest.fixture(scope="session")
@@ -17,6 +19,14 @@ def config():
 def trained_engine(config):
     training = generate_synthetic_data(n_lots=8, components_per_lot=40, seed=170)
     engine = ModuleAEngine(config)
+    engine.fit(training)
+    return engine
+
+
+@pytest.fixture(scope="session")
+def trained_module_b_engine():
+    training = generate_synthetic_data(n_lots=8, components_per_lot=40, seed=170)
+    engine = ModuleBEngine(module_b_default_config())
     engine.fit(training)
     return engine
 

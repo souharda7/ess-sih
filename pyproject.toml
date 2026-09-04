@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ess-module-a"
 version = "0.1.0"
-description = "Explainable dynamic outlier detection for ESS burn-in measurements"
+description = "Explainable outlier detection and 168-hour drift prediction for ESS burn-in measurements"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -29,6 +29,7 @@ dev = [
 
 [project.scripts]
 ess-module-a = "ess_module_a.cli:main"
+ess-module-b = "ess_module_b.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -36,4 +37,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-

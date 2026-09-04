@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: ess-module-a
 Version: 0.1.0
-Summary: Explainable dynamic outlier detection for ESS burn-in measurements
+Summary: Explainable outlier detection and 168-hour drift prediction for ESS burn-in measurements
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: fastapi>=0.110
@@ -18,9 +18,11 @@ Requires-Dist: httpx>=0.27; extra == "dev"
 Requires-Dist: pytest>=8.0; extra == "dev"
 Requires-Dist: pytest-cov>=5.0; extra == "dev"
 
-# ESS Module A — Dynamic Outlier Detection
+# ESS Burn-In Screening — Modules A and B
 
-An offline, explainable screening layer for burn-in/ESS parametric data. It preserves static specification checks and adds lot-relative, historical, drift, Isolation Forest, and robust multivariate evidence.
+An offline, explainable screening system for burn-in/ESS parametric data. Module A performs dynamic outlier detection; Module B forecasts the 168-hour value from measurements available at 0 and 24 hours and flags unsafe projected drift.
+
+To run the app, [Click here](https://ess-inspector.streamlit.app/)
 
 ## What it returns
 
@@ -67,9 +69,31 @@ python3 -m venv --system-site-packages .venv
 
 The demo fits approved synthetic reference lots and scores an unseen lot at 24 hours.
 
+Run the Module B demo:
+
+```bash
+.venv/bin/python examples/module_b_demo.py
+```
+
+## Interactive QA Dashboard
+
+The project includes a full-featured, professional QA dashboard built with Streamlit. It connects directly to the ESS engine to provide real-time multivariate anomaly scoring (Isolation Forest & Mahalanobis), drift trajectory analysis, and component-level deep-dives.
+
+To run it locally:
+```bash
+streamlit run app.py
+```
+
+## Deployment
+
+The project is fully configured for easy cloud deployment:
+
+* **Streamlit Community Cloud (Frontend):** A flat `requirements.txt` is included at the root. Simply connect the repository to Streamlit Cloud, and it will deploy the interactive dashboard instantly.
+* **Render (Infrastructure as Code):** A `render.yaml` file is provided to automatically deploy the FastAPI backend (`ess-backend`) and the Streamlit frontend (`ess-frontend`) as separate web services.
+
 ## Command-line workflow
 
-Generate PS-shaped development data:
+Generate PS-shaped development data (includes up to 5% random defect fluctuations per normal lot, plus specific lot-wide shifts):
 
 ```bash
 .venv/bin/ess-module-a generate \
@@ -83,7 +107,7 @@ Fit and version the historical reference:
 ```bash
 .venv/bin/ess-module-a fit \
   --input data/synthetic.csv \
-  --output artifacts/reference.joblib
+  --output artifacts/reference.json
 ```
 
 Score a CSV containing exactly one lot:
@@ -91,7 +115,7 @@ Score a CSV containing exactly one lot:
 ```bash
 .venv/bin/ess-module-a score \
   --input data/one_lot.csv \
-  --reference artifacts/reference.joblib \
+  --reference artifacts/reference.json \
   --as-of 24 \
   --output artifacts/score.json
 ```
@@ -111,7 +135,7 @@ Start the local service:
 
 ```bash
 .venv/bin/ess-module-a serve \
-  --reference artifacts/reference.joblib
+  --reference artifacts/reference.json
 ```
 
 Endpoints:
@@ -147,6 +171,64 @@ The score request is:
 
 Measurements later than `as_of_h` are explicitly ignored and reported as `FUTURE_MEASUREMENT_IGNORED`; they never enter early features.
 
+## Module B — 168-hour drift prediction
+
+The complete data contract, equations, decision hierarchy, and qualification boundary are documented in [`MODULE_B.md`](MODULE_B.md).
+
+Module B uses only `Value_0h` and `Value_24h` (plus deterministic features derived from those two values). It selects Ridge or Huber regression with lot-grouped cross-validation and always reports both required baselines:
+
+```text
+persistence:          predicted_168h = value_24h
+linear extrapolation: predicted_168h = 7 × value_24h - 6 × value_0h
+```
+
+The safety slope is calculated from the strictest available source:
+
+- the row's engineering `delta_limit`, when supplied;
+- the 99th percentile of danger-directed drift among known-good training parts;
+- remaining headroom to a 5% datasheet guard band.
+
+The result includes the selected model, feature contributions, cross-validated MAE, both baseline predictions, a danger-side residual bound, the binding safety threshold, and human-readable reason codes. `CONTINUE_SCREENING` is not final flight acceptance; it only means Module B found no reason for early rejection.
+
+The point forecast is the primary reject signal. To protect against a nonlinear defect that a robust regressor smooths over, the linear baseline is also used as a conservative sentinel only when both the calibrated danger-side interval crosses the safety slope and linear extrapolation exceeds 4.5 times that slope. This multiplier was selected on the validation lots, is versioned in configuration, and must be recalibrated on official data.
+
+Fit and evaluate with lot-safe partitions:
+
+```bash
+.venv/bin/ess-module-b fit \
+  --input data/synthetic.csv \
+  --output artifacts/module_b_predictor.joblib
+
+.venv/bin/ess-module-b evaluate \
+  --input data/synthetic.csv \
+  --output artifacts/module_b_acceptance_evaluation.json
+```
+
+Forecast a lot (full burn-in rows may be present; Module B ignores everything except 0 h and 24 h):
+
+```bash
+.venv/bin/ess-module-b forecast \
+  --input data/one_lot.csv \
+  --artifact artifacts/module_b_predictor.joblib \
+  --output artifacts/module_b_forecast.json
+```
+
+Module B accepts the same long-form schema as Module A and also accepts organizer-style wide rows with `Value_0h`, `Value_24h`, and `Value_168h` or `actual_value_168h`. Its API endpoints are:
+
+```text
+GET  /health
+GET  /v1/module-b/model-info
+POST /v1/module-b/forecast-lot
+```
+
+Run the packaged Module B API directly or build its dedicated container:
+
+```bash
+.venv/bin/ess-module-b serve --artifact artifacts/module_b_predictor.joblib
+docker build -f Dockerfile.module_b -t ess-module-b .
+docker run --rm -p 8001:8001 ess-module-b
+```
+
 ## Input columns
 
 Required:
@@ -168,7 +250,7 @@ Recommended context:
 tester_id, chamber_id, socket_id
 ```
 
-Engineering limits, units, transformations, direction of danger, and minimum peer counts live in [`configs/parameters.yaml`](configs/parameters.yaml).
+Module A engineering rules live in [`configs/parameters.yaml`](configs/parameters.yaml); Module B model selection and safety rules live in [`configs/module_b.yaml`](configs/module_b.yaml).
 
 ## Evidence fusion
 
@@ -193,16 +275,18 @@ The initial thresholds are high-recall defaults and are configuration-controlled
 
 ```bash
 .venv/bin/pytest
-.venv/bin/pytest --cov=ess_module_a --cov-report=term-missing
+.venv/bin/pytest --cov=ess_module_a --cov=ess_module_b --cov-report=term-missing
 ```
 
-The suite covers the 45 µA-in-a-10 µA-lot scenario, direction-aware thresholds, unit conversion, missing/duplicate readings, future-data leakage, static precedence, whole-lot alerts, adapters, lot-safe splits, and API behavior.
+The suite covers the 45 µA-in-a-10 µA-lot scenario, direction-aware thresholds, unit conversion, missing/duplicate readings, future-data leakage, static precedence, whole-lot alerts, Module B baseline equations, safety-slope binding, model contributions, wide/long adapters, lot-safe splits, and both APIs.
 
 The checked-in acceptance report at [`artifacts/acceptance_evaluation.json`](artifacts/acceptance_evaluation.json) was produced from 30 synthetic lots × 100 components with whole-lot splitting. On its unseen test partition it recorded 12/12 detected injected defects, zero false negatives, and a 2.04% healthy-component flag rate. These numbers validate the software scenarios only; they are not estimates of real hardware performance.
+
+The Module B report at [`artifacts/module_b_acceptance_evaluation.json`](artifacts/module_b_acceptance_evaluation.json) uses the repository's newer 5%-defect dataset and the same lot-safe split. Its unseen test partition records 0.293 aggregate MAE versus 0.437 for persistence and 1.342 for linear extrapolation, detects 14/14 injected defective components with zero false negatives, and has an 8.19% healthy-component flag rate. Aggregate MAE mixes configured parameter units, so the report also provides per-parameter MAE. These are synthetic software-acceptance results, not hardware qualification claims.
 
 ## Current boundaries
 
 - Synthetic results demonstrate implementation behavior, not real flight qualification.
 - Reference profiles must be built from training or QA-approved lots and are never updated during scoring.
 - Final thresholds, peer definitions, limits, and acceptable false-reject rate require the official ISRO data and engineering procedure.
-- Module B's 168-hour regression forecast is intentionally outside this package.
+- A Module B model must be retrained and its thresholds approved on representative hardware data before operational use.

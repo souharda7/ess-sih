@@ -11,8 +11,15 @@ def _through(frame: pd.DataFrame, time_h: float) -> pd.DataFrame:
 
 
 def test_high_in_spec_value_is_dynamically_quarantined(trained_engine, test_lot):
-    component = test_lot.loc[test_lot["defect_type"] == "high_in_spec", "component_id"].iloc[0]
-    report = trained_engine.score_lot(_through(test_lot, 24), as_of_h=24)
+    lot = _through(test_lot, 24)
+    component = lot["component_id"].iloc[0]
+    mask = (
+        (lot["component_id"] == component)
+        & (lot["parameter"] == "leakage_current")
+        & (lot["time_h"] == 24)
+    )
+    lot.loc[mask, "value"] = 45.0
+    report = trained_engine.score_lot(lot, as_of_h=24)
     result = next(
         item
         for item in report["parameter_results"]

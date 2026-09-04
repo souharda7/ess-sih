@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY configs ./configs
+COPY artifacts/module_b_predictor.joblib ./artifacts/module_b_predictor.joblib
+RUN pip install --no-cache-dir .
+
+ENV MODULE_B_CONFIG_PATH=/app/configs/module_b.yaml
+ENV MODULE_B_ARTIFACT_PATH=/app/artifacts/module_b_predictor.joblib
+
+EXPOSE 8001
+CMD ["uvicorn", "ess_module_b.api:app", "--host", "0.0.0.0", "--port", "8001"]
