@@ -84,24 +84,19 @@ def load_measurements() -> pd.DataFrame:
     return pd.read_csv(DATA_PATH)
 
 
-@st.cache_data(show_spinner="Running full ESS engine (Isolation Forest + Mahalanobis)…")
-def score_all_lots(_engine_id: int) -> dict[str, dict]:
-    """Score every lot in the CSV with the real engine. Returns {lot_id: result}."""
+@st.cache_data(show_spinner="Scoring selected lot (takes ~5 seconds)…")
+def score_single_lot(_engine_id: int, lot_id: str) -> dict:
+    """Score a single lot lazily to prevent 5-minute startup times."""
     engine = load_engine()
     df     = load_measurements()
-    results: dict[str, dict] = {}
-    for lot_id in sorted(df["lot_id"].unique()):
-        lot_df = df[df["lot_id"] == lot_id].copy()
-        try:
-            results[lot_id] = engine.score_lot(lot_df, as_of_h=168.0)
-        except Exception as exc:
-            results[lot_id] = {"error": str(exc)}
-    return results
+    lot_df = df[df["lot_id"] == lot_id].copy()
+    try:
+        return engine.score_lot(lot_df, as_of_h=168.0)
+    except Exception as exc:
+        return {"error": str(exc)}
 
-
-engine   = load_engine()
-raw_df   = load_measurements()
-all_lots = score_all_lots(id(engine))   # cache key = engine identity
+engine = load_engine()
+raw_df = load_measurements()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -126,10 +121,10 @@ def lot_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, list[dict]]
 # Sidebar
 # ─────────────────────────────────────────────────────────────────────────────
 st.sidebar.header("🔭 Filters")
-available_lots = sorted(all_lots.keys())
+available_lots = sorted(raw_df["lot_id"].unique())
 selected_lot   = st.sidebar.selectbox("Lot ID", available_lots)
 
-lot_result = all_lots[selected_lot]
+lot_result = score_single_lot(id(engine), selected_lot)
 if "error" in lot_result:
     st.error(f"Engine error for {selected_lot}: {lot_result['error']}")
     st.stop()
@@ -610,66 +605,69 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 st.markdown("### 🌐 Cross-Lot Comparison — Risk Score Trends")
 
-cross_rows = []
-for lot_id, result in all_lots.items():
-    if "error" in result:
-        continue
-    cdf = pd.DataFrame(result.get("component_results", []))
-    if cdf.empty:
-        continue
-    for status in ["NORMAL","MONITOR","QUARANTINE","STATIC_FAIL","RETEST_REQUIRED"]:
-        cross_rows.append({
-            "lot_id": lot_id,
-            "status": status,
-            "count":  int((cdf["status"] == status).sum()),
+if st.button("Compute Cross-Lot Trend (Warning: Takes ~2-3 minutes to score all lots)"):
+    with st.spinner("Scoring all lots in the background..."):
+        all_lots = {l_id: score_single_lot(id(engine), l_id) for l_id in available_lots}
+        cross_rows = []
+    for lot_id, result in all_lots.items():
+        if "error" in result:
+            continue
+        cdf = pd.DataFrame(result.get("component_results", []))
+        if cdf.empty:
+            continue
+        for status in ["NORMAL","MONITOR","QUARANTINE","STATIC_FAIL","RETEST_REQUIRED"]:
+            cross_rows.append({
+                "lot_id": lot_id,
+                "status": status,
+                "count":  int((cdf["status"] == status).sum()),
+            })
+
+    cross_df = pd.DataFrame(cross_rows)
+    if not cross_df.empty:
+        fig_cross = px.bar(
+            cross_df,
+            x="lot_id", y="count", color="status",
+            color_discrete_map=STATUS_COLOR,
+            barmode="stack",
+            title="Component Status by Lot (all lots)",
+            labels={"count": "Component Count", "lot_id": "Lot ID"},
+        )
+        fig_cross.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(fig_cross, use_container_width=True)
+
+    # Average risk score trend
+    avg_risk_rows = []
+    for lot_id, result in all_lots.items():
+        if "error" in result:
+            continue
+        cdf = pd.DataFrame(result.get("component_results", []))
+        if cdf.empty:
+            continue
+        avg_risk_rows.append({
+            "lot_id":       lot_id,
+            "avg_risk":     cdf["risk_score"].mean(),
+            "max_risk":     cdf["risk_score"].max(),
+            "p95_risk":     cdf["risk_score"].quantile(0.95),
         })
 
-cross_df = pd.DataFrame(cross_rows)
-if not cross_df.empty:
-    fig_cross = px.bar(
-        cross_df,
-        x="lot_id", y="count", color="status",
-        color_discrete_map=STATUS_COLOR,
-        barmode="stack",
-        title="Component Status by Lot (all lots)",
-        labels={"count": "Component Count", "lot_id": "Lot ID"},
-    )
-    fig_cross.update_layout(xaxis_tickangle=-45)
-    st.plotly_chart(fig_cross, use_container_width=True)
-
-# Average risk score trend
-avg_risk_rows = []
-for lot_id, result in all_lots.items():
-    if "error" in result:
-        continue
-    cdf = pd.DataFrame(result.get("component_results", []))
-    if cdf.empty:
-        continue
-    avg_risk_rows.append({
-        "lot_id":       lot_id,
-        "avg_risk":     cdf["risk_score"].mean(),
-        "max_risk":     cdf["risk_score"].max(),
-        "p95_risk":     cdf["risk_score"].quantile(0.95),
-    })
-
-avg_risk_df = pd.DataFrame(avg_risk_rows).sort_values("lot_id")
-if not avg_risk_df.empty:
-    fig_avgr = go.Figure()
-    fig_avgr.add_trace(go.Scatter(
-        x=avg_risk_df["lot_id"], y=avg_risk_df["avg_risk"],
-        mode="lines+markers", name="Mean Risk", line=dict(color="#3498DB"),
-    ))
-    fig_avgr.add_trace(go.Scatter(
-        x=avg_risk_df["lot_id"], y=avg_risk_df["p95_risk"],
-        mode="lines+markers", name="95th Pct Risk", line=dict(color="#E74C3C", dash="dot"),
-    ))
-    fig_avgr.update_layout(
-        title="Risk Score Trend Across Lots",
-        xaxis_title="Lot ID",
-        yaxis_title="Risk Score",
-        xaxis_tickangle=-45,
-    )
-    st.plotly_chart(fig_avgr, use_container_width=True)
+    avg_risk_df = pd.DataFrame(avg_risk_rows).sort_values("lot_id")
+    if not avg_risk_df.empty:
+        fig_avgr = go.Figure()
+        fig_avgr.add_trace(go.Scatter(
+            x=avg_risk_df["lot_id"], y=avg_risk_df["avg_risk"],
+            mode="lines+markers", name="Mean Risk", line=dict(color="#3498DB"),
+        ))
+        fig_avgr.add_trace(go.Scatter(
+            x=avg_risk_df["lot_id"], y=avg_risk_df["p95_risk"],
+            mode="lines+markers", name="95th Pct Risk", line=dict(color="#E74C3C", dash="dot"),
+        ))
+        fig_avgr.update_layout(
+            title="Risk Score Trend Across Lots",
+            xaxis_title="Lot ID",
+            yaxis_title="Risk Score",
+            xaxis_tickangle=-45,
+        )
+        st.plotly_chart(fig_avgr, use_container_width=True)
 
 st.divider()
 st.caption(
